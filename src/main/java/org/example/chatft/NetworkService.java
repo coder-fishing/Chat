@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 public class NetworkService {
     private static final int UDP_PORT = 8888; // discovery + group broadcast
+    private static final String MULTICAST_GROUP = "230.0.0.1";
 
     private final String nickname;
     private final int tcpPort;
@@ -157,27 +158,68 @@ public class NetworkService {
     }
 
     // ============= UDP LISTENER =============
-
-    // ✅ FIX: Track received messages để tránh duplicate
+        /*Brodcast*/
     private final Set<String> processedMessages = ConcurrentHashMap.newKeySet();
 
+//    private void startUdpListener() {
+//        executor.submit(() -> {
+//            byte[] buf = new byte[1024];
+//            while (!udpSocket.isClosed()) {
+//                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+//                try {
+//                    udpSocket.receive(packet);
+//                    String msg = new String(packet.getData(), 0, packet.getLength());
+//                    System.out.println("[UDP-RECV] from " + packet.getAddress().getHostAddress() + ": " + msg);
+//                    handleUdpMessage(msg, packet.getAddress());
+//                } catch (IOException e) {
+//                    break;
+//                }
+//            }
+//        });
+//
+//        // Cleanup processed messages mỗi 10 giây
+//        executor.submit(() -> {
+//            while (!Thread.currentThread().isInterrupted()) {
+//                try {
+//                    Thread.sleep(10000);
+//                    processedMessages.clear();
+//                } catch (InterruptedException e) {
+//                    break;
+//                }
+//            }
+//        });
+//    }
+        /*Multicast*/
     private void startUdpListener() {
         executor.submit(() -> {
-            byte[] buf = new byte[1024];
-            while (!udpSocket.isClosed()) {
+            try (MulticastSocket socket = new MulticastSocket(UDP_PORT)) {
+                InetAddress group = InetAddress.getByName(MULTICAST_GROUP);
+                socket.joinGroup(group);
+                System.out.println("[MULTICAST-LISTEN] Joined multicast group: " + MULTICAST_GROUP + ":" + UDP_PORT);
+
+                byte[] buf = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
-                try {
-                    udpSocket.receive(packet);
-                    String msg = new String(packet.getData(), 0, packet.getLength());
-                    System.out.println("[UDP-RECV] from " + packet.getAddress().getHostAddress() + ": " + msg);
-                    handleUdpMessage(msg, packet.getAddress());
-                } catch (IOException e) {
-                    break;
+
+                while (true) {
+                    try {
+                        socket.receive(packet);
+                        String msg = new String(packet.getData(), 0, packet.getLength());
+                        System.out.println("[MULTICAST-RECV] from " + packet.getAddress().getHostAddress() + ": " + msg);
+                        handleUdpMessage(msg, packet.getAddress());
+                    } catch (IOException e) {
+                        System.out.println("[MULTICAST-ERR] " + e.getMessage());
+                        break;
+                    }
                 }
+
+                socket.leaveGroup(group);
+                System.out.println("[MULTICAST-LISTEN] Left group " + MULTICAST_GROUP);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
 
-        // ✅ FIX: Cleanup processed messages mỗi 10 giây
+        // Cleanup processed messages mỗi 10 giây (giữ nguyên phần này)
         executor.submit(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -532,31 +574,52 @@ public class NetworkService {
         shutdown();
     }
 
+        /*Brocast*/
+//    private void sendUdp(String msg) {
+//        try (DatagramSocket socket = new DatagramSocket()) {
+//            socket.setBroadcast(true);
+//
+//            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+//            while (ifaces.hasMoreElements()) {
+//                NetworkInterface iface = ifaces.nextElement();
+//                if (iface.isLoopback() || !iface.isUp()) continue;
+//
+//                for (InterfaceAddress addr : iface.getInterfaceAddresses()) {
+//                    InetAddress broadcast = addr.getBroadcast();
+//                    if (broadcast == null) continue;
+//
+//                    DatagramPacket packet = new DatagramPacket(
+//                            msg.getBytes(),
+//                            msg.length(),
+//                            broadcast,
+//                            UDP_PORT
+//                    );
+//                    socket.send(packet);
+//                    System.out.println("[UDP-SEND] to " + broadcast.getHostAddress() + " => " + msg);
+//                }
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
+        /*Multicast*/
+
     private void sendUdp(String msg) {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.setBroadcast(true);
+        try (MulticastSocket socket = new MulticastSocket()) {
+            InetAddress group = InetAddress.getByName(MULTICAST_GROUP);
+            socket.setTimeToLive(4);
+            socket.joinGroup(group);
 
-            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-            while (ifaces.hasMoreElements()) {
-                NetworkInterface iface = ifaces.nextElement();
-                if (iface.isLoopback() || !iface.isUp()) continue;
+            byte[] buf = msg.getBytes();
+            DatagramPacket packet = new DatagramPacket(msg.getBytes(), msg.length(), group, UDP_PORT);
+            socket.send(packet);
 
-                for (InterfaceAddress addr : iface.getInterfaceAddresses()) {
-                    InetAddress broadcast = addr.getBroadcast();
-                    if (broadcast == null) continue;
+            System.out.println("[MULTICAST-SEND] to " + group.getHostAddress() + ":" + UDP_PORT + " => " + msg);
 
-                    DatagramPacket packet = new DatagramPacket(
-                            msg.getBytes(),
-                            msg.length(),
-                            broadcast,
-                            UDP_PORT
-                    );
-                    socket.send(packet);
-                    System.out.println("[UDP-SEND] to " + broadcast.getHostAddress() + " => " + msg);
-                }
-            }
+            socket.leaveGroup(group);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
