@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="org.example.chatft.ui.controller.MainController"
+            prefWidth="1000" prefHeight="700"
+            style="-fx-background-color: #ffffff;">
+
+    <!-- Left Sidebar -->
+    <left>
+        <VBox prefWidth="280" style="-fx-background-color: #ffffff; -fx-border-color: #e4e6eb; -fx-border-width: 0 1 0 0;">
+
+            <!-- Sidebar Header -->
+            <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: #ffffff; -fx-padding: 15 15 10 15;">
+                <Label text="Chats" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #050505;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="⚙" style="-fx-background-color: #e4e6eb; -fx-background-radius: 20; -fx-font-size: 16px; -fx-cursor: hand; -fx-padding: 8 12 8 12;"/>
+            </HBox>
+
+            <!-- Search Box -->
+            <HBox style="-fx-padding: 0 15 10 15;">
+                <TextField promptText="🔍 Search Messenger"
+                           style="-fx-background-color: #f0f2f5; -fx-background-radius: 20; -fx-border-width: 0; -fx-padding: 8 15 8 15; -fx-font-size: 14px;"
+                           prefHeight="36"
+                           HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <!-- Tabs for Users/Groups -->
+            <TabPane fx:id="leftTabPane" tabClosingPolicy="UNAVAILABLE"
+                     style="-fx-background-color: #ffffff; -fx-border-width: 0;"
+                     VBox.vgrow="ALWAYS">
+
+                <!-- Users Tab -->
+                <Tab text="Messages" style="-fx-font-size: 13px;">
+                    <VBox spacing="0" style="-fx-background-color: #ffffff;">
+                        <ListView fx:id="userListView"
+                                  style="-fx-background-color: #ffffff; -fx-border-width: 0; -fx-padding: 0;"
+                                  VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </Tab>
+
+                <!-- Groups Tab -->
+                <Tab text="Groups" style="-fx-font-size: 13px;">
+                    <VBox spacing="8" style="-fx-background-color: #ffffff; -fx-padding: 15;">
+
+                        <Button fx:id="createPublicGroupBtn"
+                                text="➕ Create Public Group"
+                                onAction="#handleCreatePublicGroup"
+                                prefWidth="240"
+                                prefHeight="36"
+                                style="-fx-background-color: #0084ff; -fx-text-fill: white; -fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;"/>
+
+                        <Button fx:id="createPrivateGroupBtn"
+                                text="🔒 Create Private Group"
+                                onAction="#handleCreatePrivateGroup"
+                                prefWidth="240"
+                                prefHeight="36"
+                                style="-fx-background-color: #e4e6eb; -fx-text-fill: #050505; -fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;"/>
+
+                        <Button fx:id="joinGroupBtn"
+                                text="👥 Join Group"
+                                onAction="#handleJoinGroup"
+                                prefWidth="240"
+                                prefHeight="36"
+                                style="-fx-background-color: #e4e6eb; -fx-text-fill: #050505; -fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;"/>
+
+                        <Separator style="-fx-background-color: #e4e6eb; -fx-padding: 5 0 5 0;"/>
+
+                        <ListView fx:id="groupListView"
+                                  style="-fx-background-color: #ffffff; -fx-border-width: 0;"
+                                  VBox.vgrow="ALWAYS"/>
+                    </VBox>
+                </Tab>
+
+            </TabPane>
+        </VBox>
+    </left>
+
+    <!-- Center Chat Area -->
+    <center>
+        <BorderPane fx:id="chatPane" style="-fx-background-color: #ffffff;">
+
+            <!-- Chat Header -->
+            <top>
+                <HBox alignment="CENTER_LEFT" spacing="12"
+                      style="-fx-background-color: #ffffff; -fx-border-color: #e4e6eb; -fx-border-width: 0 0 1 0; -fx-padding: 12 20 12 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 3, 0, 0, 1);">
+
+                    <Label text="👤" style="-fx-font-size: 20px;"/>
+
+                    <VBox spacing="2">
+                        <Label fx:id="chatHeaderLabel"
+                               text="Select a conversation"
+                               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #050505;"/>
+                        <Label text="Active now"
+                               style="-fx-font-size: 12px; -fx-text-fill: #65676b;"/>
+                    </VBox>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <Button text="📞" style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 8;"/>
+                    <Button text="📹" style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 8;"/>
+                    <Button text="ℹ" style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 8;"/>
+                </HBox>
+            </top>
+
+            <!-- Messages Area -->
+            <center>
+                <ScrollPane fx:id="chatScrollPane"
+                            fitToWidth="true"
+                            vbarPolicy="AS_NEEDED"
+                            style="-fx-background-color: #ffffff; -fx-background: #ffffff; -fx-border-width: 0;">
+                    <VBox fx:id="messagesBox"
+                          spacing="8"
+                          style="-fx-background-color: #ffffff;">
+                        <padding>
+                            <Insets top="20" right="20" bottom="20" left="20"/>
+                        </padding>
+                    </VBox>
+                </ScrollPane>
+            </center>
+
+            <!-- Input Area -->
+            <bottom>
+                <HBox spacing="8" alignment="CENTER"
+                      style="-fx-background-color: #ffffff; -fx-padding: 15 20 15 20; -fx-border-color: #e4e6eb; -fx-border-width: 1 0 0 0;">
+
+                    <Button text="➕"
+                            style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-text-fill: #0084ff; -fx-cursor: hand; -fx-padding: 8;"/>
+
+                    <Button fx:id="fileButton"
+                            text="📎"
+                            onAction="#handleSendFile"
+                            disable="true"
+                            style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-text-fill: #0084ff; -fx-cursor: hand; -fx-padding: 8;"/>
+
+                    <HBox spacing="10" alignment="CENTER" HBox.hgrow="ALWAYS"
+                          style="-fx-background-color: #f0f2f5; -fx-background-radius: 20; -fx-padding: 8 15 8 15;">
+                        <TextField fx:id="messageInput"
+                                   promptText="Aa"
+                                   onAction="#handleSendMessage"
+                                   disable="true"
+                                   style="-fx-background-color: transparent; -fx-border-width: 0; -fx-font-size: 14px; -fx-prompt-text-fill: #8a8d91;"
+                                   HBox.hgrow="ALWAYS"/>
+
+                        <Button text="😊"
+                                style="-fx-background-color: transparent; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 0;"/>
+                    </HBox>
+
+                    <Button fx:id="sendButton"
+                            text="👍"
+                            onAction="#handleSendMessage"
+                            disable="true"
+                            style="-fx-background-color: transparent; -fx-font-size: 24px; -fx-text-fill: #0084ff; -fx-cursor: hand; -fx-padding: 4;"/>
+                </HBox>
+            </bottom>
+
+        </BorderPane>
+    </center>
+
+</BorderPane>

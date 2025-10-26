@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="org.example.chatft.ui.controller.LoginController"
+      spacing="10" alignment="CENTER"
+      prefWidth="300" prefHeight="150">
+
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="P2P Chat Application" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+    <VBox spacing="5">
+        <Label text="Nickname:"/>
+        <TextField fx:id="nicknameField" promptText="Enter your nickname"/>
+    </VBox>
+
+    <Button fx:id="joinButton" text="Join Network"
+            onAction="#handleJoin"
+            prefWidth="150"
+            defaultButton="true"/>
+
+    <Label fx:id="errorLabel" textFill="red" managed="false" visible="false"/>
+
+</VBox>

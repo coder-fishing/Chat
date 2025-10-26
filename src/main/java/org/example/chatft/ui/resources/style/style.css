@@ -1,0 +1,113 @@
+/* Main styling for P2P Chat Application */
+
+.root {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 12px;
+}
+
+/* Buttons */
+.button {
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-opacity: 0.8;
+}
+
+.button:pressed {
+    -fx-opacity: 0.6;
+}
+
+/* Primary buttons */
+.button-primary {
+    -fx-background-color: #2196F3;
+    -fx-text-fill: white;
+}
+
+/* Text fields */
+.text-field {
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.text-field:focused {
+    -fx-border-color: #2196F3;
+    -fx-border-width: 2;
+}
+
+/* List views */
+.list-view {
+    -fx-background-radius: 5;
+}
+
+.list-cell:hover {
+    -fx-background-color: #f0f0f0;
+}
+
+.list-cell:selected {
+    -fx-background-color: #e3f2fd;
+    -fx-text-fill: black;
+}
+
+/* Scroll pane */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: white;
+}
+
+/* Tab pane */
+.tab-pane {
+    -fx-tab-min-width: 100;
+}
+
+.tab {
+    -fx-background-radius: 5 5 0 0;
+}
+
+.tab:selected {
+    -fx-background-color: white;
+}
+
+/* Custom styles for badges */
+.unread-badge {
+    -fx-background-color: #ff4444;
+    -fx-text-fill: white;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 10;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+/* Message bubbles */
+.message-bubble {
+    -fx-background-radius: 12;
+    -fx-padding: 8;
+}
+
+.message-bubble-me {
+    -fx-background-color: lightblue;
+}
+
+.message-bubble-other {
+    -fx-background-color: lightgray;
+}
+
+/* File message styling */
+.file-message {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+}
+
+.file-message-me {
+    -fx-background-color: #e8f5e8;
+    -fx-border-color: #c3e6c3;
+}
+
+.file-message-other {
+    -fx-background-color: #fff3cd;
+    -fx-border-color: #ffeaa7;
+}
