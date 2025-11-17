@@ -1,0 +1,34 @@
+.text-area {
+    -fx-background-insets: 0;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 12;
+    -fx-padding: 8 12;
+}
+
+.text-area:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-background-color: #3b8cff; /* hoặc giữ nguyên bgColor */
+}
+
+.text-area .scroll-pane {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .scroll-bar {
+    -fx-pref-width: 0;
+    -fx-opacity: 0;
+}

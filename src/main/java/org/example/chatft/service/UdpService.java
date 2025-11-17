@@ -103,8 +103,8 @@ public class UdpService {
     /**
      * Broadcast private group
      */
-    public void broadcastPrivateGroup(String groupName) {
-        sendMessage("GROUP_PRIVATE;" + groupName);
+    public void broadcastPrivateGroup(String groupName, String password) {
+        sendMessage("GROUP_PRIVATE;" + groupName + " ;" + password);
     }
 
     /**

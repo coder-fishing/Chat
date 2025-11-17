@@ -1,78 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
 
-<BorderPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="org.example.chatft.ui.controller.MainController"
-            prefWidth="1000" prefHeight="700"
-            style="-fx-background-color: #ffffff;">
+<BorderPane prefHeight="700" prefWidth="1000" stylesheets="@style/main.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.chatft.ui.controller.MainController">
 
     <!-- Left Sidebar -->
     <left>
-        <VBox prefWidth="280" style="-fx-background-color: #ffffff; -fx-border-color: #e4e6eb; -fx-border-width: 0 1 0 0;">
+        <VBox prefWidth="280" styleClass="sidebar, border-right">
 
             <!-- Sidebar Header -->
-            <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: #ffffff; -fx-padding: 15 15 10 15;">
-                <Label text="Chats" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #050505;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="⚙" style="-fx-background-color: #e4e6eb; -fx-background-radius: 20; -fx-font-size: 16px; -fx-cursor: hand; -fx-padding: 8 12 8 12;"/>
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="sidebar-header">
+                <Label styleClass="sidebar-title" text="Chats" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button styleClass="settings-btn" text="⚙" />
             </HBox>
 
             <!-- Search Box -->
             <HBox style="-fx-padding: 0 15 10 15;">
-                <TextField promptText="🔍 Search Messenger"
-                           style="-fx-background-color: #f0f2f5; -fx-background-radius: 20; -fx-border-width: 0; -fx-padding: 8 15 8 15; -fx-font-size: 14px;"
-                           prefHeight="36"
-                           HBox.hgrow="ALWAYS"/>
+                <TextField prefHeight="36" promptText="🔍 Search Messenger" styleClass="search-field" HBox.hgrow="ALWAYS" />
             </HBox>
 
             <!-- Tabs for Users/Groups -->
-            <TabPane fx:id="leftTabPane" tabClosingPolicy="UNAVAILABLE"
-                     style="-fx-background-color: #ffffff; -fx-border-width: 0;"
-                     VBox.vgrow="ALWAYS">
+            <TabPane fx:id="leftTabPane" styleClass="tab-pane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
 
                 <!-- Users Tab -->
-                <Tab text="Messages" style="-fx-font-size: 13px;">
-                    <VBox spacing="0" style="-fx-background-color: #ffffff;">
-                        <ListView fx:id="userListView"
-                                  style="-fx-background-color: #ffffff; -fx-border-width: 0; -fx-padding: 0;"
-                                  VBox.vgrow="ALWAYS"/>
+                <Tab styleClass="tab" text="Messages">
+                    <VBox spacing="0" styleClass="bg-white">
+                        <ListView fx:id="userListView" prefHeight="567.0" prefWidth="248.0" styleClass="list-view" VBox.vgrow="ALWAYS" />
                     </VBox>
                 </Tab>
 
                 <!-- Groups Tab -->
-                <Tab text="Groups" style="-fx-font-size: 13px;">
+                <Tab styleClass="tab" text="Groups">
                     <VBox spacing="8" style="-fx-background-color: #ffffff; -fx-padding: 15;">
 
                         <Button fx:id="createPublicGroupBtn"
-                                text="➕ Create Public Group"
                                 onAction="#handleCreatePublicGroup"
-                                prefWidth="240"
                                 prefHeight="36"
-                                style="-fx-background-color: #0084ff; -fx-text-fill: white; -fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                                prefWidth="240"
+                                styleClass="btn-secondary">
+                            <graphic>
+                                <HBox alignment="CENTER" spacing="6">
+                                    <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
+                                        <image>
+                                            <Image url="@icons/add.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label text="Create Public Group" />
+                                </HBox>
+                            </graphic>
+                        </Button>
 
                         <Button fx:id="createPrivateGroupBtn"
-                                text="🔒 Create Private Group"
                                 onAction="#handleCreatePrivateGroup"
-                                prefWidth="240"
                                 prefHeight="36"
-                                style="-fx-background-color: #e4e6eb; -fx-text-fill: #050505; -fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;"/>
-
-                        <Button fx:id="joinGroupBtn"
-                                text="👥 Join Group"
-                                onAction="#handleJoinGroup"
                                 prefWidth="240"
-                                prefHeight="36"
-                                style="-fx-background-color: #e4e6eb; -fx-text-fill: #050505; -fx-background-radius: 20; -fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                                styleClass="btn-secondary">
 
-                        <Separator style="-fx-background-color: #e4e6eb; -fx-padding: 5 0 5 0;"/>
+                            <graphic>
+                                <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
+                                    <image>
+                                        <Image url="@icons/lock.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
 
-                        <ListView fx:id="groupListView"
-                                  style="-fx-background-color: #ffffff; -fx-border-width: 0;"
-                                  VBox.vgrow="ALWAYS"/>
+                            <text>
+                                Create Private Group
+                            </text>
+                        </Button>
+
+                        <Separator styleClass="separator" />
+
+                        <ListView fx:id="groupListView" styleClass="list-view" VBox.vgrow="ALWAYS" />
                     </VBox>
                 </Tab>
 
@@ -82,79 +86,85 @@
 
     <!-- Center Chat Area -->
     <center>
-        <BorderPane fx:id="chatPane" style="-fx-background-color: #ffffff;">
+        <BorderPane fx:id="chatPane" styleClass="bg-white">
 
             <!-- Chat Header -->
             <top>
-                <HBox alignment="CENTER_LEFT" spacing="12"
-                      style="-fx-background-color: #ffffff; -fx-border-color: #e4e6eb; -fx-border-width: 0 0 1 0; -fx-padding: 12 20 12 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 3, 0, 0, 1);">
+                <HBox alignment="CENTER_LEFT" spacing="12" styleClass="chat-header, border-bottom, font-emoji">
 
-                    <Label text="👤" style="-fx-font-size: 20px;"/>
+                    <Label style="-fx-font-size: 20px;" text="👤" />
 
                     <VBox spacing="2">
-                        <Label fx:id="chatHeaderLabel"
-                               text="Select a conversation"
-                               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #050505;"/>
-                        <Label text="Active now"
-                               style="-fx-font-size: 12px; -fx-text-fill: #65676b;"/>
+                        <Label fx:id="chatHeaderLabel" styleClass="chat-header-title" text="Select a conversation" />
+                        <Label styleClass="chat-header-status" text="Active now" />
                     </VBox>
 
-                    <Region HBox.hgrow="ALWAYS"/>
+                    <Region HBox.hgrow="ALWAYS" />
 
-                    <Button text="📞" style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 8;"/>
-                    <Button text="📹" style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 8;"/>
-                    <Button text="ℹ" style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-cursor: hand; -fx-padding: 8;"/>
+                    <Button styleClass="btn-icon" text="📞" />
+                    <Button fx:id="videoCallButton" styleClass="btn-icon" text="📹"  />
+                    <Button styleClass="btn-icon" text="ℹ" />
                 </HBox>
             </top>
 
             <!-- Messages Area -->
             <center>
-                <ScrollPane fx:id="chatScrollPane"
-                            fitToWidth="true"
-                            vbarPolicy="AS_NEEDED"
-                            style="-fx-background-color: #ffffff; -fx-background: #ffffff; -fx-border-width: 0;">
-                    <VBox fx:id="messagesBox"
-                          spacing="8"
-                          style="-fx-background-color: #ffffff;">
+                <ScrollPane fx:id="chatScrollPane" fitToWidth="true" styleClass="scroll-pane" vbarPolicy="AS_NEEDED">
+                    <VBox fx:id="messagesBox" spacing="8">
                         <padding>
-                            <Insets top="20" right="20" bottom="20" left="20"/>
+                            <Insets bottom="20" left="20" right="20" top="20" />
                         </padding>
+                  <styleClass>
+                     <String fx:value="messages-container" />
+                     <String fx:value="file-icon" />
+                     <String fx:value="font-emoji" />
+                  </styleClass>
                     </VBox>
                 </ScrollPane>
             </center>
 
             <!-- Input Area -->
             <bottom>
-                <HBox spacing="8" alignment="CENTER"
-                      style="-fx-background-color: #ffffff; -fx-padding: 15 20 15 20; -fx-border-color: #e4e6eb; -fx-border-width: 1 0 0 0;">
+                <HBox alignment="CENTER" prefHeight="18.0" prefWidth="205.0" spacing="8" styleClass="input-container, border-top, font-emoji">
 
-                    <Button text="➕"
-                            style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-text-fill: #0084ff; -fx-cursor: hand; -fx-padding: 8;"/>
+<!--                    <Button fx:id="addButton" prefHeight="32.0" prefWidth="55.0" styleClass="btn-icon" text="+" />-->
 
-                    <Button fx:id="fileButton"
-                            text="📎"
-                            onAction="#handleSendFile"
-                            disable="true"
-                            style="-fx-background-color: transparent; -fx-font-size: 20px; -fx-text-fill: #0084ff; -fx-cursor: hand; -fx-padding: 8;"/>
+                    <Button fx:id="fileButton" onAction="#handleSendFile" styleClass="btn-icon">
+                        <graphic>
+                            <ImageView fitHeight="22" fitWidth="22" preserveRatio="true">
+                                <image>
+                                    <Image url="@icons/camera.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
 
-                    <HBox spacing="10" alignment="CENTER" HBox.hgrow="ALWAYS"
-                          style="-fx-background-color: #f0f2f5; -fx-background-radius: 20; -fx-padding: 8 15 8 15;">
-                        <TextField fx:id="messageInput"
-                                   promptText="Aa"
-                                   onAction="#handleSendMessage"
-                                   disable="true"
-                                   style="-fx-background-color: transparent; -fx-border-width: 0; -fx-font-size: 14px; -fx-prompt-text-fill: #8a8d91;"
-                                   HBox.hgrow="ALWAYS"/>
+                    <HBox fx:id="textFieldContainer" alignment="CENTER" prefHeight="40.0" prefWidth="565.0" spacing="10" styleClass="input-field-wrapper" HBox.hgrow="ALWAYS">
+                        <!-- ✅ ĐỔI TextField → TextArea -->
+                        <TextArea fx:id="messageInput" minHeight="27.0" prefHeight="48.0" prefRowCount="1" prefWidth="470.0" promptText="Aa" styleClass="input-field" wrapText="true" HBox.hgrow="ALWAYS" />
 
-                        <Button text="😊"
-                                style="-fx-background-color: transparent; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 0;"/>
+<!--                        <Button fx:id="emojiButton" prefHeight="37.0" prefWidth="112.0" style="-fx-font-size: 18px;" styleClass="btn-icon" text="cc" />-->
+
+                        <Button fx:id="sendLikeButton" onAction="#handleSendLikeButton" styleClass="btn-icon">
+                            <graphic>
+                                <ImageView fitHeight="22" fitWidth="22" preserveRatio="true">
+                                    <image>
+                                        <Image url="@icons/like.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
                     </HBox>
 
-                    <Button fx:id="sendButton"
-                            text="👍"
-                            onAction="#handleSendMessage"
-                            disable="true"
-                            style="-fx-background-color: transparent; -fx-font-size: 24px; -fx-text-fill: #0084ff; -fx-cursor: hand; -fx-padding: 4;"/>
+                    <Button fx:id="sendButton" onAction="#handleSendMessage" prefHeight="50.0" prefWidth="65.0" styleClass="btn-icon">
+                        <graphic>
+                            <ImageView fitHeight="25.0" fitWidth="48.0" preserveRatio="true">
+                                <image>
+                                    <Image url="@icons/send.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
                 </HBox>
             </bottom>
 

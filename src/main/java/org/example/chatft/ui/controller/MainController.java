@@ -1,13 +1,16 @@
 package org.example.chatft.ui.controller;
 
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.example.chatft.service.NetworkService;
@@ -18,6 +21,7 @@ import org.example.chatft.model.User;
 import org.example.chatft.ui.util.FileHelper;
 import org.example.chatft.ui.util.MessageRenderer;
 
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,9 +39,14 @@ public class MainController {
     @FXML private Label chatHeaderLabel;
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox messagesBox;
-    @FXML private TextField messageInput;
+    @FXML private TextArea messageInput;
+    @FXML private Button sendLikeButton;
     @FXML private Button sendButton;
     @FXML private Button fileButton;
+    @FXML private ContextMenu contextMenu;
+//    @FXML private Button  emojiButton, addButton;
+    @FXML private HBox textFieldContainer;
+    private static final int MAX_INPUT_HEIGHT = 120;
 
     // Data
     private ObservableList<User> users = FXCollections.observableArrayList();
@@ -57,21 +66,25 @@ public class MainController {
 
     @FXML
     private void initialize() {
-        // Initialize utilities
-        messageRenderer = new MessageRenderer();
+        messageRenderer = new MessageRenderer(chatScrollPane);
         fileHelper = new FileHelper();
 
-        // Setup list views
+        // Ẩn hết chat-related controls
+        fileButton.setDisable(true);
+        sendButton.setDisable(true);
+        sendLikeButton.setDisable(true);
+        messageInput.setDisable(true);
+//        sendButton.setVisible(true);
+
+        // Khởi tạo ListView
         userListView.setItems(users);
         groupListView.setItems(groups);
-
-        // Setup custom cell factories
-        setupUserListCell();
+        userListView.setCellFactory(lv -> new UserCell());
         setupGroupListCell();
 
-        // Setup selection listeners
         setupUserSelectionListener();
         setupGroupSelectionListener();
+        setupMessageInputListener();
     }
 
     public void initializeNetwork(String nickname) {
@@ -115,7 +128,9 @@ public class MainController {
 
             // Enable UI
             messageInput.setDisable(false);
+//            sendButton.setVisible(false);
             sendButton.setDisable(false);
+            sendLikeButton.setDisable(false);
             fileButton.setDisable(false);
 
         } catch (IOException e) {
@@ -191,42 +206,46 @@ public class MainController {
         });
     }
 
-    @FXML
-    private void handleJoinGroup() {
-        Group selected = groupListView.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showAlert("Info", "Please select a group to join");
-            return;
-        }
-
-        if (selected.isJoined()) {
-            showAlert("Info", "You are already in this group");
-            return;
-        }
-
-        if (selected.isPublic()) {
-            if (network.joinGroup(selected.getName(), null)) {
-                selected.setJoined(true);
-                groupListView.refresh();
-            } else {
-                showAlert("Error", "Failed to join group");
-            }
-        } else {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("Join Private Group");
-            dialog.setHeaderText("Enter password for: " + selected.getName());
-
-            Optional<String> result = dialog.showAndWait();
-            result.ifPresent(password -> {
-                if (network.joinGroup(selected.getName(), password)) {
-                    selected.setJoined(true);
-                    groupListView.refresh();
-                } else {
-                    showAlert("Error", "Invalid password");
-                }
-            });
-        }
-    }
+//    @FXML
+//    private void handleJoinGroup() {
+//        Group selected = groupListView.getSelectionModel().getSelectedItem();
+//
+//
+//        if (selected == null) {
+//            showAlert("Info", "Please select a group to join");
+//            return;
+//        }
+//
+//        if (selected.isJoined()) {
+//            showAlert("Info", "You are already in this group");
+//            return;
+//        } else {
+//            selected.setJoined(true);
+//        }
+//
+//        if (selected.isPublic()) {
+//            if (network.joinGroup(selected.getName(), null)) {
+//                selected.setJoined(true);
+//                groupListView.refresh();
+//            } else {
+//                showAlert("Error", "Failed to join group");
+//            }
+//        } else {
+//            TextInputDialog dialog = new TextInputDialog();
+//            dialog.setTitle("Join Private Group");
+//            dialog.setHeaderText("Enter password for: " + selected.getName());
+//
+//            Optional<String> result = dialog.showAndWait();
+//            result.ifPresent(password -> {
+//                if (network.joinGroup(selected.getName(), password)) {
+//                    selected.setJoined(true);
+//                    groupListView.refresh();
+//                } else {
+//                    showAlert("Error", "Invalid password");
+//                }
+//            });
+//        }
+//    }
 
     @FXML
     private void handleSendMessage() {
@@ -235,11 +254,92 @@ public class MainController {
 
         if (currentChatUser != null) {
             VBox box = chatBoxes.get(currentChatUser.getNickname());
-            messageRenderer.addMessage(box, "Me: " + msg, true, false);
+//            System.out.println( "bin nè" + currentChatUser.getNickname());
+            messageRenderer.addMessage(box, currentChatUser.getNickname(), msg, true, false);
             network.sendMessage(currentChatUser, msg);
         } else if (currentChatGroup != null) {
             VBox box = groupChatBoxes.get(currentChatGroup.getName());
-            messageRenderer.addMessage(box, "Me: " + msg, true, false);
+            messageRenderer.addMessage(box, "",  msg, true, false);
+            network.sendGroupMessage(currentChatGroup.getName(), msg);
+        }
+
+        messageInput.clear();
+        scrollToBottom();
+    }
+
+
+    private void setupMessageInputListener() {
+        messageInput.textProperty().addListener((obs, oldText, newText) -> {
+            boolean isEmpty = newText.trim().isEmpty();
+            // ✅ Ẩn/hiện các nút dựa vào text
+//            addButton.setVisible(isEmpty);
+//            addButton.setManaged(isEmpty);
+
+            fileButton.setVisible(isEmpty);
+            fileButton.setManaged(isEmpty);
+
+//            emojiButton.setVisible(isEmpty);
+//            emojiButton.setManaged(isEmpty);
+
+            sendLikeButton.setVisible(isEmpty);
+            sendLikeButton.setManaged(isEmpty);
+
+            sendButton.setVisible(!isEmpty);
+            sendButton.setManaged(!isEmpty);
+
+            // ✅ Auto resize height theo nội dung
+            adjustTextAreaHeight();
+        });
+
+        // ✅ Bắt Enter để gửi (Shift+Enter để xuống dòng)
+        messageInput.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER && !event.isShiftDown()) {
+                event.consume();
+                handleSendMessage();
+            }
+        });
+    }
+
+    private void adjustTextAreaHeight() {
+        // ✅ Force update layout TRƯỚC KHI lấy width
+        messageInput.applyCss();
+        messageInput.layout();
+
+        double availableWidth = messageInput.getWidth()
+                - messageInput.getPadding().getLeft()
+                - messageInput.getPadding().getRight()
+                - 10;
+
+        // Fallback nếu width chưa có
+        if (availableWidth <= 10) {
+            availableWidth = messageInput.getPrefWidth() - 20;
+        }
+
+        Text textNode = new Text(messageInput.getText());
+        textNode.setFont(messageInput.getFont());
+        textNode.setWrappingWidth(availableWidth);
+
+        double textHeight = textNode.getLayoutBounds().getHeight();
+        double newHeight = Math.min(Math.max(24, textHeight + 12), MAX_INPUT_HEIGHT);
+
+        System.out.println("Width: " + availableWidth + " | TextHeight: " + textHeight + " | NewHeight: " + newHeight);
+
+        messageInput.setMinHeight(newHeight);
+        messageInput.setMaxHeight(MAX_INPUT_HEIGHT);
+        messageInput.setPrefHeight(newHeight);
+        textFieldContainer.setPrefHeight(newHeight + 10);
+    }
+    @FXML
+    private void handleSendLikeButton() {
+        String msg = "__LIKE_ICON__";
+
+        if (currentChatUser != null) {
+            VBox box = chatBoxes.get(currentChatUser.getNickname());
+            messageRenderer.addMessage(box, "Me", msg, true, false);
+            network.sendMessage(currentChatUser, msg);
+        } else if (currentChatGroup != null) {
+            VBox box = groupChatBoxes.get(currentChatGroup.getName());
+            messageRenderer.addMessage(box, "Me", msg, true, false);
             network.sendGroupMessage(currentChatGroup.getName(), msg);
         }
 
@@ -256,19 +356,22 @@ public class MainController {
         File file = fileChooser.showOpenDialog(stage);
 
         if (file != null) {
+            // Lấy đường dẫn file để hiển thị preview
+            String filePath = file.getAbsolutePath();
+
             if (currentChatUser != null) {
                 VBox box = chatBoxes.get(currentChatUser.getNickname());
-                messageRenderer.addFileMessage(box, "Me", file.getName(), file.length(), null, true);
-                network.sendFile(currentChatUser, file.getAbsolutePath());
+                messageRenderer.addFileMessage(box, "Me", file.getName(), file.length(), filePath, true);
+                network.sendFile(currentChatUser, filePath);
             } else if (currentChatGroup != null) {
                 VBox box = groupChatBoxes.get(currentChatGroup.getName());
-                messageRenderer.addFileMessage(box, "Me", file.getName(), file.length(), null, true);
-                network.sendGroupFile(currentChatGroup.getName(), file.getAbsolutePath());
+                // Truyền filePath thay vì null
+                messageRenderer.addFileMessage(box, "Me", file.getName(), file.length(), filePath, true);
+                network.sendGroupFile(currentChatGroup.getName(), filePath);
             }
             scrollToBottom();
         }
     }
-
     // ============= Setup Methods =============
 
     private void setupUserListCell() {
@@ -371,29 +474,95 @@ public class MainController {
         });
     }
 
+    // Thay thế method setupGroupSelectionListener() hiện tại bằng code này:
+
     private void setupGroupSelectionListener() {
         groupListView.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 1) {
-                Group selected = groupListView.getSelectionModel().getSelectedItem();
-                if (selected != null && selected.isJoined()) {
-                    currentChatGroup = selected;
-                    currentChatUser = null;
-                    userListView.getSelectionModel().clearSelection();
+            Group selected = groupListView.getSelectionModel().getSelectedItem();
+            if (selected == null) return;
 
-                    selected.resetUnread();
-                    groupListView.refresh();
+            if (e.getClickCount() == 2) {
+                // Double-click
+                if (selected.isJoined()) {
+                    // Đã join rồi -> mở chat (giống single-click)
+                    openExistingGroupChat(selected);
+                } else {
+                    // Chưa join -> hiện confirm dialog để join
+                    Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+                    confirmDialog.setTitle("Join Group");
+                    confirmDialog.setHeaderText("Join group: " + selected.getName());
+                    confirmDialog.setContentText("Do you want to join this " +
+                            (selected.isPublic() ? "public" : "private") + " group?");
 
-                    VBox box = groupChatBoxes.computeIfAbsent(selected.getName(), k -> new VBox(5));
-                    box.setPadding(new Insets(10));
-                    messagesBox = box;
-                    chatScrollPane.setContent(messagesBox);
-
-                    String type = selected.isPublic() ? "Public" : "Private";
-                    chatHeaderLabel.setText(type + " Group: " + selected.getName());
-                    fileButton.setVisible(true);
+                    Optional<ButtonType> result = confirmDialog.showAndWait();
+                    if (result.isPresent() && result.get() == ButtonType.OK) {
+                        joinGroupAndOpen(selected);
+                    }
+                }
+            } else if (e.getClickCount() == 1) {
+                // Single-click: Chỉ mở chat nếu đã join
+                if (selected.isJoined()) {
+                    openExistingGroupChat(selected);
                 }
             }
         });
+    }
+
+// Thêm 2 methods helper này vào MainController:
+
+    // Helper method để mở chat của group đã join (tránh duplicate code)
+    private void openExistingGroupChat(Group selected) {
+        currentChatGroup = selected;
+        currentChatUser = null;
+        userListView.getSelectionModel().clearSelection();
+
+        selected.resetUnread();
+        groupListView.refresh();
+
+        VBox box = groupChatBoxes.computeIfAbsent(selected.getName(), k -> new VBox(5));
+        box.setPadding(new Insets(10));
+        messagesBox = box;
+        chatScrollPane.setContent(messagesBox);
+
+        String type = selected.isPublic() ? "Public" : "Private";
+        chatHeaderLabel.setText(type + " Group: " + selected.getName());
+        fileButton.setVisible(true);
+
+        scrollToBottom();
+    }
+
+    // Method để join group và mở chat sau khi join thành công
+    private void joinGroupAndOpen(Group group) {
+        if (group.isPublic()) {
+            // Public group - join trực tiếp
+            if (network.joinGroup(group.getName(), null)) {
+                group.setJoined(true);
+                groupListView.refresh();
+                openExistingGroupChat(group);
+            } else {
+                showAlert("Error", "Failed to join group");
+            }
+        } else {
+            // Private group - yêu cầu password
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Join Private Group");
+            dialog.setHeaderText("Enter password for: " + group.getName());
+
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(password -> {
+                // ✅ CHỈ join và mở chat khi password đúng
+                if (!password.trim().isEmpty()) {
+                    if (network.joinGroup(group.getName(), password)) {
+                        group.setJoined(true);
+                        groupListView.refresh();
+                        openExistingGroupChat(group);
+                    } else {
+                        // ❌ Password sai -> KHÔNG set joined, hiện lỗi
+                        showAlert("Error", "Invalid password. Access denied.");
+                    }
+                }
+            });
+        }
     }
 
     // ============= Message Handlers =============
@@ -411,8 +580,9 @@ public class MainController {
 
             if (sender != null) {
                 VBox box = chatBoxes.computeIfAbsent(sender.getNickname(), k -> new VBox(5));
-                box.setPadding(new Insets(10));
-                messageRenderer.addMessage(box, senderName + ": " + message, false, false);
+                box.setPadding(new Insets(20));
+                messageRenderer.addMessage(box,sender.getNickname(), message, false, false);
+                System.out.println("heeee" + message);
 
                 if (currentChatUser == null || !currentChatUser.getNickname().equals(senderName)) {
                     sender.incrementUnread();
@@ -431,7 +601,7 @@ public class MainController {
     private void handleIncomingGroupMessage(GroupMessage groupMsg) {
         VBox box = groupChatBoxes.computeIfAbsent(groupMsg.getGroupName(), k -> new VBox(5));
         box.setPadding(new Insets(10));
-        messageRenderer.addMessage(box, groupMsg.getSender() + ": " + groupMsg.getContent(), false, false);
+        messageRenderer.addMessage(box, groupMsg.getSender(), groupMsg.getContent(), false, false);
 
         Group group = groups.stream()
                 .filter(g -> g.getName().equals(groupMsg.getGroupName()))
@@ -481,7 +651,7 @@ public class MainController {
                 scrollToBottom();
             }
 
-            fileHelper.showFileReceivedNotification(fileMsg);
+//            fileHelper.showFileReceivedNotification(fileMsg);
         }
     }
 
@@ -507,7 +677,7 @@ public class MainController {
             scrollToBottom();
         }
 
-        fileHelper.showGroupFileReceivedNotification(fileMsg);
+//        fileHelper.showGroupFileReceivedNotification(fileMsg);
     }
 
     // ============= Utility Methods =============

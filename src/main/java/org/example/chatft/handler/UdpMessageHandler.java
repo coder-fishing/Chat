@@ -8,6 +8,7 @@ import org.example.chatft.repository.UserRepository;
 import org.example.chatft.utils.MessageDeduplicator;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.concurrent.ExecutorService;
 
@@ -25,6 +26,7 @@ public class UdpMessageHandler {
     private final Consumer<Group> onGroupDiscovered;
     private final Runnable onNewUserDetected;
     private final Consumer<FileDownloadRequest> onFileDownloadRequest;
+    private Consumer<User> onIncomingVideoCall;
 
     public UdpMessageHandler(String nickname, int tcpPort,
                              UserRepository userRepository,
@@ -80,14 +82,27 @@ public class UdpMessageHandler {
             case "GFILE":
                 handleGroupFile(parts, addr);
                 break;
+            case "VIDEO_CALL_REQUEST":
+                handleVideoCallRequest(parts, addr);
+                break;
+            case "VIDEO_CALL_ACCEPT":
+                handleVideoCallAccept(parts, addr);
+                break;
+            case "VIDEO_CALL_REJECT":
+                handleVideoCallReject(parts, addr);
+                break;
         }
+    }
+    
+    public void setOnIncomingVideoCall(Consumer<User> callback) {
+        this.onIncomingVideoCall = callback;
     }
 
     private void handleOnline(String[] parts, InetAddress addr) {
         if (parts.length < 3) return;
 
-        String nick = parts[1];
-        int port = Integer.parseInt(parts[2]);
+        String nick = parts[1].trim();
+        int port = Integer.parseInt(parts[2].trim());
 
         if (!nick.equals(nickname)) {
             User user = new User(nick, addr.getHostAddress(), port);
@@ -105,7 +120,7 @@ public class UdpMessageHandler {
     private void handleOffline(String[] parts) {
         if (parts.length < 2) return;
 
-        String offlineNick = parts[1];
+        String offlineNick = parts[1].trim();
         User removed = userRepository.removeUser(offlineNick);
 
         if (removed != null) {
@@ -116,7 +131,15 @@ public class UdpMessageHandler {
 
     private void handleGroupPublic(String[] parts) {
         if (parts.length >= 2) {
-            String groupName = parts[1];
+            String groupName = parts[1].trim(); // Trim whitespace
+            
+            // Check if group already exists before adding
+            Group existingGroup = groupRepository.getGroup(groupName);
+            if (existingGroup != null) {
+                System.out.println("[GROUP] Public group already known, skipping: " + groupName);
+                return;
+            }
+            
             Group group = groupRepository.addDiscoveredGroup(groupName, true);
             onGroupDiscovered.accept(group);
             System.out.println("[GROUP] Public group discovered: " + groupName);
@@ -125,18 +148,36 @@ public class UdpMessageHandler {
 
     private void handleGroupPrivate(String[] parts) {
         if (parts.length >= 2) {
-            String groupName = parts[1];
-            Group group = groupRepository.addDiscoveredGroup(groupName, false);
+            String groupName = parts[1].trim(); // Trim whitespace
+            String password = (parts.length >= 3) ? parts[2].trim() : null;
+
+            System.out.println("[GROUP] Private group discovered: " + groupName +
+                    (password != null ? " (with password)" : " (no password)"));
+
+            // Check if group already exists before adding
+            Group existingGroup = groupRepository.getGroup(groupName);
+            if (existingGroup != null) {
+                System.out.println("[GROUP] Private group already known, skipping: " + groupName);
+                return;
+            }
+
+            // Add new group with password
+            Group group = (password != null)
+                    ? groupRepository.addDiscoveredGroup(groupName, false, password)
+                    : groupRepository.addDiscoveredGroup(groupName, false);
+
             onGroupDiscovered.accept(group);
-            System.out.println("[GROUP] Private group discovered: " + groupName);
+            System.out.println("[GROUP] ✅ Group handled: " + groupName);
+        } else {
+            System.out.println("[GROUP] ⚠️ Invalid GROUP_PRIVATE message: " + Arrays.toString(parts));
         }
     }
 
     private void handleGroupMessage(String[] parts) {
         if (parts.length >= 4) {
-            String groupName = parts[1];
-            String sender = parts[2];
-            String content = parts[3];
+            String groupName = parts[1].trim();
+            String sender = parts[2].trim();
+            String content = parts[3]; // Don't trim message content
 
             if (!sender.equals(nickname) && groupRepository.isJoined(groupName)) {
                 GroupMessage groupMsg = new GroupMessage(groupName, sender, content);
@@ -148,11 +189,11 @@ public class UdpMessageHandler {
 
     private void handleGroupFile(String[] parts, InetAddress addr) {
         if (parts.length >= 6) {
-            String groupName = parts[1];
-            String sender = parts[2];
-            String fileName = parts[3];
-            long fileSize = Long.parseLong(parts[4]);
-            int senderTcpPort = Integer.parseInt(parts[5]);
+            String groupName = parts[1].trim();
+            String sender = parts[2].trim();
+            String fileName = parts[3].trim();
+            long fileSize = Long.parseLong(parts[4].trim());
+            int senderTcpPort = Integer.parseInt(parts[5].trim());
 
             if (!sender.equals(nickname) && groupRepository.isJoined(groupName)) {
                 System.out.println("[GROUP] File in " + groupName + " from " + sender + ": " + fileName);
@@ -163,6 +204,59 @@ public class UdpMessageHandler {
                 onFileDownloadRequest.accept(request);
             }
         }
+    }
+    
+    private void handleVideoCallRequest(String[] parts, InetAddress addr) {
+        // VIDEO_CALL_REQUEST;fromNickname;fromPort
+        System.out.println("[VIDEO-SIGNAL] Received VIDEO_CALL_REQUEST: " + String.join(";", parts));
+        
+        if (parts.length < 3) {
+            System.err.println("[VIDEO-SIGNAL-ERR] Invalid VIDEO_CALL_REQUEST format");
+            return;
+        }
+        
+        String fromNickname = parts[1].trim();
+        int fromPort = Integer.parseInt(parts[2].trim());
+        
+        System.out.println("[VIDEO-SIGNAL] From: " + fromNickname + ", My nickname: " + nickname);
+        
+        if (!fromNickname.equals(nickname)) {
+            User caller = userRepository.getUser(fromNickname);
+            if (caller == null) {
+                caller = new User(fromNickname, addr.getHostAddress(), fromPort);
+                userRepository.addUser(caller);
+                System.out.println("[VIDEO-SIGNAL] Created new user: " + caller);
+            }
+            
+            System.out.println("[VIDEO-SIGNAL] Triggering incoming call callback for: " + fromNickname);
+            
+            if (onIncomingVideoCall != null) {
+                onIncomingVideoCall.accept(caller);
+                System.out.println("[VIDEO-SIGNAL] Callback triggered successfully");
+            } else {
+                System.err.println("[VIDEO-SIGNAL-ERR] onIncomingVideoCall callback is NULL!");
+            }
+        } else {
+            System.out.println("[VIDEO-SIGNAL] Ignoring own call request");
+        }
+    }
+    
+    private void handleVideoCallAccept(String[] parts, InetAddress addr) {
+        // VIDEO_CALL_ACCEPT;fromNickname
+        if (parts.length < 2) return;
+        
+        String fromNickname = parts[1].trim();
+        System.out.println("[VIDEO] Call accepted by: " + fromNickname);
+        // Handle in VideoCallController
+    }
+    
+    private void handleVideoCallReject(String[] parts, InetAddress addr) {
+        // VIDEO_CALL_REJECT;fromNickname
+        if (parts.length < 2) return;
+        
+        String fromNickname = parts[1].trim();
+        System.out.println("[VIDEO] Call rejected by: " + fromNickname);
+        // Handle in VideoCallController
     }
 
     // Inner class for file download request

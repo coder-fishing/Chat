@@ -24,7 +24,9 @@ public class ChatApplication extends Application {
 
             primaryStage.setTitle("P2P Chat - Login");
             primaryStage.setScene(scene);
-            primaryStage.setResizable(false);
+//            primaryStage.setResizable(true);
+            primaryStage.setMinWidth(800);
+            primaryStage.setMinHeight(600);
 
             // Handle window close
             primaryStage.setOnCloseRequest(e -> {

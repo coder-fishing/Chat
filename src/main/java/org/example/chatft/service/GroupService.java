@@ -29,11 +29,14 @@ public class GroupService {
      * Create public group
      */
     public void createPublicGroup(String groupName) {
-        groupRepository.joinPublicGroup(groupName);
-
+        // Add group to discovered list first
         Group group = groupRepository.addDiscoveredGroup(groupName, true);
+        
+        // Join the group
+        groupRepository.joinPublicGroup(groupName);
         group.setJoined(true);
 
+        // Broadcast to network
         udpService.broadcastPublicGroup(groupName);
         System.out.println("[GROUP] Created public group: " + groupName);
     }
@@ -42,12 +45,15 @@ public class GroupService {
      * Create private group with password
      */
     public void createPrivateGroup(String groupName, String password) {
+        // Add group to discovered list first (with password)
+        Group group = groupRepository.addDiscoveredGroup(groupName, false, password);
+        
+        // Join the group
         groupRepository.joinPrivateGroup(groupName, password);
-
-        Group group = groupRepository.addDiscoveredGroup(groupName, false);
         group.setJoined(true);
 
-        udpService.broadcastPrivateGroup(groupName);
+        // Broadcast to network
+        udpService.broadcastPrivateGroup(groupName, password);
         System.out.println("[GROUP] Created private group: " + groupName);
     }
 
@@ -139,12 +145,16 @@ public class GroupService {
      * Broadcast all joined groups (used when new user detected)
      */
     public void broadcastAllGroups() {
+        // Gửi lại tất cả group public
         for (String groupName : groupRepository.getJoinedPublicGroups()) {
             udpService.broadcastPublicGroup(groupName);
         }
 
-        for (String groupName : groupRepository.getJoinedPrivateGroups().keySet()) {
-            udpService.broadcastPrivateGroup(groupName);
+        // Gửi lại tất cả group private (có password)
+        for (var entry : groupRepository.getJoinedPrivateGroups().entrySet()) {
+            String groupName = entry.getKey();
+            String password = entry.getValue();
+            udpService.broadcastPrivateGroup(groupName, password);
         }
     }
 }

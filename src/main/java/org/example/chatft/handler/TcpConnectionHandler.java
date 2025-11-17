@@ -14,6 +14,7 @@ public class TcpConnectionHandler {
     private final FileTransferService fileTransferService;
     private final Consumer<String> onMessage;
     private final Consumer<FileMessage> onFileReceived;
+    private Consumer<String[]> onVideoCallRequest;
 
     public TcpConnectionHandler(String nickname,
                                 GroupRepository groupRepository,
@@ -25,6 +26,10 @@ public class TcpConnectionHandler {
         this.fileTransferService = fileTransferService;
         this.onMessage = onMessage;
         this.onFileReceived = onFileReceived;
+    }
+    
+    public void setOnVideoCallRequest(Consumer<String[]> callback) {
+        this.onVideoCallRequest = callback;
     }
 
     public void handleConnection(Socket socket) {
@@ -42,6 +47,9 @@ public class TcpConnectionHandler {
 
             } else if (header.startsWith("REQUEST_GROUP_FILE:")) {
                 handleGroupFileRequest(header, out);
+                
+            } else if (header.startsWith("VIDEO_CALL_REQUEST")) {
+                handleVideoCallRequest(header);
             }
 
         } catch (IOException e) {
@@ -53,6 +61,19 @@ public class TcpConnectionHandler {
         String msg = header.substring(4); // Remove "MSG:" prefix
         onMessage.accept(msg);
         System.out.println("[TCP] Message received: " + msg);
+    }
+    
+    private void handleVideoCallRequest(String header) {
+        // VIDEO_CALL_REQUEST;fromNickname;fromPort
+        System.out.println("[TCP-VIDEO] Received VIDEO_CALL_REQUEST: " + header);
+        
+        String[] parts = header.split(";");
+        if (parts.length >= 3 && onVideoCallRequest != null) {
+            onVideoCallRequest.accept(parts);
+            System.out.println("[TCP-VIDEO] Video call request forwarded to handler");
+        } else {
+            System.err.println("[TCP-VIDEO-ERR] Invalid format or no callback: " + header);
+        }
     }
 
     private void handleFile(String header, DataInputStream in) throws IOException {
