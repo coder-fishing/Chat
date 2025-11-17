@@ -23,9 +23,9 @@
         </dependency>
 
         <dependency>
-            <groupId>dev.onvoid.webrtc</groupId>
-            <artifactId>webrtc-java</artifactId>
-            <version>0.14.0</version>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20230227</version>
         </dependency>
 
         <!-- JavaFX -->
@@ -39,6 +39,25 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>21</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>21</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>21</version>
+        </dependency>
+
+        <!-- Webcam Capture -->
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>0.3.12</version>
         </dependency>
 
         <!-- BootstrapFX (CSS style cho JavaFX) -->
@@ -82,6 +101,10 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <compilerArgs>
+                        <arg>--add-reads</arg>
+                        <arg>org.example.chatft=ALL-UNNAMED</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
@@ -95,6 +118,10 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>org.example.chatft/org.example.chatft.HelloApplication</mainClass>
+                            <options>
+                                <option>--add-reads</option>
+                                <option>org.example.chatft=ALL-UNNAMED</option>
+                            </options>
                         </configuration>
                     </execution>
                 </executions>

@@ -19,9 +19,26 @@ public class GroupRepository {
     /**
      * Add discovered group
      */
+    public Group addDiscoveredGroup(String groupName, boolean isPublic, String password) {
+        // Check if group already exists
+        Group existingGroup = discoveredGroups.get(groupName);
+        if (existingGroup != null) {
+            System.out.println("[REPO] ⚠️ Group already exists, skipping: " + groupName);
+            return existingGroup;
+        }
+        
+        Group group = new Group(groupName, isPublic, password);
+        discoveredGroups.put(groupName, group);
+        System.out.println("[REPO] ✅ Group saved: " + groupName +
+                ", password: " + (password != null ? "[SAVED]" : "[NULL]"));
+        return group;
+    }
+
+    /**
+     * Add discovered group (existing method - keep as is)
+     */
     public Group addDiscoveredGroup(String groupName, boolean isPublic) {
-        return discoveredGroups.computeIfAbsent(groupName,
-                k -> new Group(k, isPublic, null));
+        return addDiscoveredGroup(groupName, isPublic, null);
     }
 
     /**

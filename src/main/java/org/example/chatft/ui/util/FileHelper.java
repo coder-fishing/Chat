@@ -50,53 +50,53 @@ public class FileHelper {
     /**
      * Show file received notification for private files
      */
-    public void showFileReceivedNotification(FileMessage fileMsg) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("File Received");
-        alert.setHeaderText("File received from " + fileMsg.getSender());
-        alert.setContentText("File: " + fileMsg.getFileName() +
-                "\nSize: " + formatFileSize(fileMsg.getFileSize()));
-
-        ButtonType openBtn = new ButtonType("Open File");
-        ButtonType openFolderBtn = new ButtonType("Open Folder");
-        ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        alert.getButtonTypes().setAll(openBtn, openFolderBtn, closeBtn);
-
-        alert.showAndWait().ifPresent(response -> {
-            if (response == openBtn) {
-                openFile(fileMsg.getFilePath());
-            } else if (response == openFolderBtn) {
-                openFileLocation(fileMsg.getFilePath());
-            }
-        });
-    }
-
-    /**
-     * Show file received notification for group files
-     */
-    public void showGroupFileReceivedNotification(FileMessage fileMsg) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Group File Received");
-        alert.setHeaderText("File received from " + fileMsg.getSender() +
-                " in group " + fileMsg.getGroupName());
-        alert.setContentText("File: " + fileMsg.getFileName() +
-                "\nSize: " + formatFileSize(fileMsg.getFileSize()));
-
-        ButtonType openBtn = new ButtonType("Open File");
-        ButtonType openFolderBtn = new ButtonType("Open Folder");
-        ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-        alert.getButtonTypes().setAll(openBtn, openFolderBtn, closeBtn);
-
-        alert.showAndWait().ifPresent(response -> {
-            if (response == openBtn) {
-                openFile(fileMsg.getFilePath());
-            } else if (response == openFolderBtn) {
-                openFileLocation(fileMsg.getFilePath());
-            }
-        });
-    }
+//    public void showFileReceivedNotification(FileMessage fileMsg) {
+//        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+//        alert.setTitle("File Received");
+//        alert.setHeaderText("File received from " + fileMsg.getSender());
+//        alert.setContentText("File: " + fileMsg.getFileName() +
+//                "\nSize: " + formatFileSize(fileMsg.getFileSize()));
+//
+//        ButtonType openBtn = new ButtonType("Open File");
+//        ButtonType openFolderBtn = new ButtonType("Open Folder");
+//        ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+//
+//        alert.getButtonTypes().setAll(openBtn, openFolderBtn, closeBtn);
+//
+//        alert.showAndWait().ifPresent(response -> {
+//            if (response == openBtn) {
+//                openFile(fileMsg.getFilePath());
+//            } else if (response == openFolderBtn) {
+//                openFileLocation(fileMsg.getFilePath());
+//            }
+//        });
+//    }
+//
+//    /**
+//     * Show file received notification for group files
+//     */
+//    public void showGroupFileReceivedNotification(FileMessage fileMsg) {
+//        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+//        alert.setTitle("Group File Received");
+//        alert.setHeaderText("File received from " + fileMsg.getSender() +
+//                " in group " + fileMsg.getGroupName());
+//        alert.setContentText("File: " + fileMsg.getFileName() +
+//                "\nSize: " + formatFileSize(fileMsg.getFileSize()));
+//
+//        ButtonType openBtn = new ButtonType("Open File");
+//        ButtonType openFolderBtn = new ButtonType("Open Folder");
+//        ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+//
+//        alert.getButtonTypes().setAll(openBtn, openFolderBtn, closeBtn);
+//
+//        alert.showAndWait().ifPresent(response -> {
+//            if (response == openBtn) {
+//                openFile(fileMsg.getFilePath());
+//            } else if (response == openFolderBtn) {
+//                openFileLocation(fileMsg.getFilePath());
+//            }
+//        });
+//    }
 
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);

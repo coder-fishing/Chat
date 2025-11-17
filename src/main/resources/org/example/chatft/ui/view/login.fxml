@@ -3,29 +3,77 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.effect.DropShadow?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="org.example.chatft.ui.controller.LoginController"
-      spacing="10" alignment="CENTER"
-      prefWidth="300" prefHeight="150">
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="org.example.chatft.ui.controller.LoginController"
+           style="-fx-background-color: linear-gradient(to bottom, #667eea 0%, #764ba2 100%);">
 
-    <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
-    </padding>
+    <!-- Login Card -->
+    <VBox spacing="25" alignment="CENTER" maxWidth="400" maxHeight="500"
+          style="-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 40;">
+        
+        <effect>
+            <DropShadow color="#00000040" radius="20" offsetY="5"/>
+        </effect>
 
-    <Label text="P2P Chat Application" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+        <!-- Header -->
+        <VBox spacing="8" alignment="CENTER">
+            <Label text="💬" style="-fx-font-size: 48px;"/>
+            <Label text="P2P Chat" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #667eea;"/>
+            <Label text="Connect with your peers instantly" style="-fx-font-size: 13px; -fx-text-fill: #999;"/>
+        </VBox>
 
-    <VBox spacing="5">
-        <Label text="Nickname:"/>
-        <TextField fx:id="nicknameField" promptText="Enter your nickname"/>
+        <!-- Input Section -->
+        <VBox spacing="12" VBox.vgrow="ALWAYS">
+            <Label text="Enter Your Nickname" style="-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: #333;"/>
+            
+            <TextField fx:id="nicknameField" 
+                       promptText="e.g. john_doe" 
+                       style="-fx-font-size: 15px; 
+                              -fx-padding: 12 16; 
+                              -fx-background-radius: 10; 
+                              -fx-border-color: #ddd; 
+                              -fx-border-radius: 10; 
+                              -fx-border-width: 2;
+                              -fx-background-color: #f8f9fa;">
+                <VBox.margin>
+                    <Insets/>
+                </VBox.margin>
+            </TextField>
+
+            <!-- Error Label -->
+            <Label fx:id="errorLabel" 
+                   wrapText="true"
+                   style="-fx-text-fill: #e74c3c; 
+                          -fx-font-size: 13px; 
+                          -fx-padding: 8 12; 
+                          -fx-background-color: #fee; 
+                          -fx-background-radius: 8;"
+                   managed="false" 
+                   visible="false"/>
+        </VBox>
+
+        <!-- Join Button -->
+        <Button fx:id="joinButton" 
+                text="Join Network" 
+                onAction="#handleJoin"
+                defaultButton="true"
+                style="-fx-font-size: 16px; 
+                       -fx-font-weight: bold; 
+                       -fx-background-color: #667eea; 
+                       -fx-text-fill: white; 
+                       -fx-background-radius: 10; 
+                       -fx-padding: 14 50; 
+                       -fx-cursor: hand;"
+                maxWidth="Infinity">
+        </Button>
+
+        <!-- Info Footer -->
+        <Label text="Connect instantly with peers on your network" 
+               wrapText="true"
+               style="-fx-font-size: 11px; -fx-text-fill: #999; -fx-text-alignment: center;"/>
     </VBox>
 
-    <Button fx:id="joinButton" text="Join Network"
-            onAction="#handleJoin"
-            prefWidth="150"
-            defaultButton="true"/>
-
-    <Label fx:id="errorLabel" textFill="red" managed="false" visible="false"/>
-
-</VBox>
+</StackPane>
