@@ -36,6 +36,7 @@ public class MainController {
     @FXML private Button createPublicGroupBtn;
     @FXML private Button createPrivateGroupBtn;
     @FXML private Button joinGroupBtn;
+    @FXML private Button addIpButton;
     @FXML private Label chatHeaderLabel;
     @FXML private ScrollPane chatScrollPane;
     @FXML private VBox messagesBox;
