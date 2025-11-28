@@ -38,11 +38,17 @@ public class MessageRenderer {
 
     public void addMessage(VBox box, String sender, String text, boolean isMe, boolean isFile) {
         boolean isLikeMessage = text.trim().equals(LIKE_EMOJI);
+        boolean isSystemMessage = "__SYSTEM__".equals(sender);
 
         VBox messageBox = new VBox(2);
         messageBox.setAlignment(isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
 
-        boolean showSender = !isMe && (lastSender == null || !lastSender.equals(sender));
+        // System messages (join/leave notifications) should be centered
+        if (isSystemMessage) {
+            messageBox.setAlignment(Pos.CENTER);
+        }
+
+        boolean showSender = !isMe && !isSystemMessage && (lastSender == null || !lastSender.equals(sender));
 
         if (showSender) {
             Label senderLabel = new Label(sender);
@@ -69,107 +75,129 @@ public class MessageRenderer {
             label.setWrapText(true);
             
             // ✅ Giới hạn chiều rộng tối đa 70% khung chat
-            label.maxWidthProperty().bind(box.widthProperty().multiply(0.7));
+            if (!isSystemMessage) {
+                label.maxWidthProperty().bind(box.widthProperty().multiply(0.7));
+            }
 
-            String bgColor = isMe ? "#3797F0" : "#EFEFEF";
-            String textColor = isMe ? "white" : "black";
+            String bgColor, textColor, fontSize;
+            
+            if (isSystemMessage) {
+                // System messages: gray, italic, smaller, centered
+                bgColor = "#F0F0F0";
+                textColor = "#888888";
+                fontSize = "12px";
+                label.setStyle(
+                        "-fx-padding: 4 8;" +
+                                "-fx-background-radius: 8;" +
+                                "-fx-background-color: " + bgColor + ";" +
+                                "-fx-text-fill: " + textColor + ";" +
+                                "-fx-font-size: " + fontSize + ";" +
+                                "-fx-font-family: 'Segoe UI';" +
+                                "-fx-font-style: italic;"
+                );
+            } else {
+                bgColor = isMe ? "#3797F0" : "#EFEFEF";
+                textColor = isMe ? "white" : "black";
+                fontSize = "16px";
+                label.setStyle(
+                        "-fx-padding: 8 12;" +
+                                "-fx-background-radius: 12;" +
+                                "-fx-background-color: " + bgColor + ";" +
+                                "-fx-text-fill: " + textColor + ";" +
+                                "-fx-font-size: " + fontSize + ";" +
+                                "-fx-font-family: 'Segoe UI';"
+                );
+            }
 
-            label.setStyle(
-                    "-fx-padding: 8 12;" +
-                            "-fx-background-radius: 12;" +
-                            "-fx-background-color: " + bgColor + ";" +
-                            "-fx-text-fill: " + textColor + ";" +
-                            "-fx-font-size: 16px;" +
-                            "-fx-font-family: 'Segoe UI';"
-            );
-
-            // ✅ Make label text selectable by converting to TextArea when clicked
-            label.setOnMousePressed(event -> {
-                if (event.isPrimaryButtonDown()) {
-                    // Convert to TextArea for selection (supports multi-line)
-                    TextArea textArea = new TextArea(text);
-                    textArea.setWrapText(true);
-                    textArea.setEditable(false);
-                    textArea.setFocusTraversable(false);
-                    textArea.setPrefWidth(label.getWidth());
-                    textArea.setPrefHeight(label.getHeight());
-                    textArea.maxWidthProperty().bind(box.widthProperty().multiply(0.7));
-                    
-                    // ✅ Disable default context menu (Copy, Select All)
-                    textArea.setContextMenu(new ContextMenu()); // Set empty context menu to override default
-                    // Different highlight colors for better visibility
-                    String highlightFill = isMe ? "rgba(255,255,255,0.4)" : "rgba(56,151,240,0.4)";
-                    String highlightTextFill = isMe ? "white" : "black";
-                    
-                    textArea.setStyle(
-                            "-fx-padding: 8 12;" +
-                                    "-fx-background-radius: 12;" +
-                                    "-fx-background-color: " + bgColor + ";" +
-                                    "-fx-text-fill: " + textColor + ";" +
-                                    "-fx-font-size: 16px;" +
-                                    "-fx-font-family: 'Segoe UI';" +
-                                    "-fx-control-inner-background: " + bgColor + ";" +
-                                    "-fx-background-insets: 0;" +
-                                    "-fx-border-width: 0;" +
-                                    "-fx-border-color: transparent;" +
-                                    "-fx-focus-color: transparent;" +
-                                    "-fx-faint-focus-color: transparent;" +
-                                    "-fx-text-box-border: transparent;" +
-                                    "-fx-highlight-fill: " + highlightFill + ";" +
-                                    "-fx-highlight-text-fill: " + highlightTextFill + ";" +
-                                    "-fx-cursor: text;"
-                    );
-                    
-                    // ✅ Override context menu with custom one - use onContextMenuRequested
-                    textArea.setOnContextMenuRequested(e -> {
-                        String selectedText = textArea.getSelectedText();
-                        if (selectedText != null && !selectedText.trim().isEmpty()) {
-                            Window owner = textArea.getScene().getWindow();
-                            messageContextMenu.show(owner, e.getScreenX(), e.getScreenY(), selectedText);
-                        }
-                        e.consume(); // Prevent default context menu
-                    });
-                    
-                    // Replace label with textArea temporarily
-                    HBox container = (HBox) label.getParent();
-                    container.getChildren().set(0, textArea);
-                    
-                    Platform.runLater(() -> {
-                        textArea.requestFocus();
-                        textArea.selectAll();
+            // ✅ Make label text selectable by converting to TextArea when clicked (skip for system messages)
+            if (!isSystemMessage) {
+                label.setOnMousePressed(event -> {
+                    if (event.isPrimaryButtonDown()) {
+                        // Convert to TextArea for selection (supports multi-line)
+                        TextArea textArea = new TextArea(text);
+                        textArea.setWrapText(true);
+                        textArea.setEditable(false);
+                        textArea.setFocusTraversable(false);
+                        textArea.setPrefWidth(label.getWidth());
+                        textArea.setPrefHeight(label.getHeight());
+                        textArea.maxWidthProperty().bind(box.widthProperty().multiply(0.7));
                         
-                        // Hide scrollbars
-                        var scrollPane = textArea.lookup(".scroll-pane");
-                        if (scrollPane != null) {
-                            scrollPane.setStyle("-fx-background-color: " + bgColor + "; -fx-background-insets: 0;");
-                        }
-                        var viewport = textArea.lookup(".scroll-pane .viewport");
-                        if (viewport != null) {
-                            viewport.setStyle("-fx-background-color: " + bgColor + ";");
-                        }
-                        var content = textArea.lookup(".scroll-pane .content");
-                        if (content != null) {
-                            content.setStyle("-fx-background-color: " + bgColor + ";");
-                        }
-                    });
-                    
-                    // Revert back to label when focus is lost
-                    textArea.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-                        if (!isNowFocused) {
-                            container.getChildren().set(0, label);
-                        }
-                    });
-                }
-            });
+                        // ✅ Disable default context menu (Copy, Select All)
+                        textArea.setContextMenu(new ContextMenu()); // Set empty context menu to override default
+                        // Different highlight colors for better visibility
+                        String highlightFill = isMe ? "rgba(255,255,255,0.4)" : "rgba(56,151,240,0.4)";
+                        String highlightTextFill = isMe ? "white" : "black";
+                        
+                        textArea.setStyle(
+                                "-fx-padding: 8 12;" +
+                                        "-fx-background-radius: 12;" +
+                                        "-fx-background-color: " + bgColor + ";" +
+                                        "-fx-text-fill: " + textColor + ";" +
+                                        "-fx-font-size: 16px;" +
+                                        "-fx-font-family: 'Segoe UI';" +
+                                        "-fx-control-inner-background: " + bgColor + ";" +
+                                        "-fx-background-insets: 0;" +
+                                        "-fx-border-width: 0;" +
+                                        "-fx-border-color: transparent;" +
+                                        "-fx-focus-color: transparent;" +
+                                        "-fx-faint-focus-color: transparent;" +
+                                        "-fx-text-box-border: transparent;" +
+                                        "-fx-highlight-fill: " + highlightFill + ";" +
+                                        "-fx-highlight-text-fill: " + highlightTextFill + ";" +
+                                        "-fx-cursor: text;"
+                        );
+                        
+                        // ✅ Override context menu with custom one - use onContextMenuRequested
+                        textArea.setOnContextMenuRequested(e -> {
+                            String selectedText = textArea.getSelectedText();
+                            if (selectedText != null && !selectedText.trim().isEmpty()) {
+                                Window owner = textArea.getScene().getWindow();
+                                messageContextMenu.show(owner, e.getScreenX(), e.getScreenY(), selectedText);
+                            }
+                            e.consume(); // Prevent default context menu
+                        });
+                        
+                        // Replace label with textArea temporarily
+                        HBox container = (HBox) label.getParent();
+                        container.getChildren().set(0, textArea);
+                        
+                        Platform.runLater(() -> {
+                            textArea.requestFocus();
+                            textArea.selectAll();
+                            
+                            // Hide scrollbars
+                            var scrollPane = textArea.lookup(".scroll-pane");
+                            if (scrollPane != null) {
+                                scrollPane.setStyle("-fx-background-color: " + bgColor + "; -fx-background-insets: 0;");
+                            }
+                            var viewport = textArea.lookup(".scroll-pane .viewport");
+                            if (viewport != null) {
+                                viewport.setStyle("-fx-background-color: " + bgColor + ";");
+                            }
+                            var content = textArea.lookup(".scroll-pane .content");
+                            if (content != null) {
+                                content.setStyle("-fx-background-color: " + bgColor + ";");
+                            }
+                        });
+                        
+                        // Revert back to label when focus is lost
+                        textArea.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+                            if (!isNowFocused) {
+                                container.getChildren().set(0, label);
+                            }
+                        });
+                    }
+                });
+            }
 
             HBox container = new HBox(label);
-            container.setAlignment(isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+            container.setAlignment(isSystemMessage ? Pos.CENTER : (isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT));
 
             messageBox.getChildren().add(container);
         }
 
         HBox outer = new HBox(messageBox);
-        outer.setAlignment(isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        outer.setAlignment(isSystemMessage ? Pos.CENTER : (isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT));
         outer.setSpacing(5);
 
         box.getChildren().add(outer);

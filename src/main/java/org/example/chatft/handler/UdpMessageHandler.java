@@ -27,6 +27,17 @@ public class UdpMessageHandler {
     private final Runnable onNewUserDetected;
     private final Consumer<FileDownloadRequest> onFileDownloadRequest;
     private Consumer<User> onIncomingVideoCall;
+    private Consumer<VideoFrameData> onVideoFrameReceived;
+    
+    // Deduplication for JOIN/LEAVE notifications
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> recentNotifications = 
+        new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ScheduledExecutorService cleanupScheduler = 
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
 
     public UdpMessageHandler(String nickname, int tcpPort,
                              UserRepository userRepository,
@@ -57,10 +68,18 @@ public class UdpMessageHandler {
 
         String type = parts[0];
 
-        // Check for duplicates (only for group messages)
-        if (deduplicator.isDuplicate(type, msg)) {
-            System.out.println("[UDP-SKIP] Duplicate: " + msg.substring(0, Math.min(50, msg.length())));
-            return;
+        // Check for duplicates (skip for frequent/realtime messages)
+        if (!type.equals("VIDEO_FRAME") && !type.equals("ONLINE") && !type.equals("OFFLINE") 
+                && !type.equals("JOIN_GROUP") && !type.equals("LEAVE_GROUP")) {
+            if (deduplicator.isDuplicate(type, msg)) {
+                System.out.println("[UDP-SKIP] Duplicate: " + msg.substring(0, Math.min(50, msg.length())));
+                return;
+            }
+        }
+        
+        // Debug log for video frames
+        if (type.equals("VIDEO_FRAME")) {
+            System.out.println("[UDP-RECV-VIDEO] Received VIDEO_FRAME message, parts: " + parts.length);
         }
 
         switch (type) {
@@ -82,6 +101,12 @@ public class UdpMessageHandler {
             case "GFILE":
                 handleGroupFile(parts, addr);
                 break;
+            case "JOIN_GROUP":
+                handleJoinGroup(parts);
+                break;
+            case "LEAVE_GROUP":
+                handleLeaveGroup(parts);
+                break;
             case "VIDEO_CALL_REQUEST":
                 handleVideoCallRequest(parts, addr);
                 break;
@@ -91,11 +116,18 @@ public class UdpMessageHandler {
             case "VIDEO_CALL_REJECT":
                 handleVideoCallReject(parts, addr);
                 break;
+            case "VIDEO_FRAME":
+                handleVideoFrame(parts, addr);
+                break;
         }
     }
     
     public void setOnIncomingVideoCall(Consumer<User> callback) {
         this.onIncomingVideoCall = callback;
+    }
+    
+    public void setOnVideoFrameReceived(Consumer<VideoFrameData> callback) {
+        this.onVideoFrameReceived = callback;
     }
 
     private void handleOnline(String[] parts, InetAddress addr) {
@@ -118,14 +150,26 @@ public class UdpMessageHandler {
     }
 
     private void handleOffline(String[] parts) {
-        if (parts.length < 2) return;
+        if (parts.length < 2) {
+            System.out.println("[UDP-OFFLINE] Invalid OFFLINE message format");
+            return;
+        }
 
         String offlineNick = parts[1].trim();
+        
+        if (offlineNick.equals(nickname)) {
+            return; // Ignore own OFFLINE message
+        }
+        
+        System.out.println("[INFO] User left: " + offlineNick);
+        
         User removed = userRepository.removeUser(offlineNick);
 
         if (removed != null) {
-            System.out.println("[INFO] User left: " + removed);
+            System.out.println("[INFO] ✅ Removed from list: " + removed);
             onUserOffline.accept(removed);
+        } else {
+            System.out.println("[INFO] ⚠️ User not in list: " + offlineNick);
         }
     }
 
@@ -205,6 +249,80 @@ public class UdpMessageHandler {
             }
         }
     }
+
+    private void handleJoinGroup(String[] parts) {
+        if (parts.length >= 3) {
+            String groupName = parts[1].trim();
+            String joinerNickname = parts[2].trim();
+
+            // Only show notification if we're in the group and it's not us joining
+            if (!joinerNickname.equals(nickname) && groupRepository.isJoined(groupName)) {
+                String notificationKey = "JOIN:" + groupName + ":" + joinerNickname;
+                long now = System.currentTimeMillis();
+                
+                // Atomic operation: add if absent, returns previous value
+                Long lastTime = recentNotifications.putIfAbsent(notificationKey, now);
+                
+                if (lastTime != null && (now - lastTime) < 3000) {
+                    // Duplicate within 3 seconds, skip
+                    return;
+                }
+                
+                if (lastTime != null) {
+                    // Expired, update
+                    recentNotifications.put(notificationKey, now);
+                }
+                
+                // Schedule cleanup
+                cleanupScheduler.schedule(
+                    () -> recentNotifications.remove(notificationKey),
+                    5, java.util.concurrent.TimeUnit.SECONDS
+                );
+                
+                String systemMessage = joinerNickname + " joined the group";
+                GroupMessage groupMsg = new GroupMessage(groupName, "__SYSTEM__", systemMessage);
+                onGroupMessage.accept(groupMsg);
+                System.out.println("[GROUP] " + joinerNickname + " joined " + groupName);
+            }
+        }
+    }
+
+    private void handleLeaveGroup(String[] parts) {
+        if (parts.length >= 3) {
+            String groupName = parts[1].trim();
+            String leaverNickname = parts[2].trim();
+
+            // Only show notification if we're in the group and it's not us leaving
+            if (!leaverNickname.equals(nickname) && groupRepository.isJoined(groupName)) {
+                String notificationKey = "LEAVE:" + groupName + ":" + leaverNickname;
+                long now = System.currentTimeMillis();
+                
+                // Atomic operation: add if absent, returns previous value
+                Long lastTime = recentNotifications.putIfAbsent(notificationKey, now);
+                
+                if (lastTime != null && (now - lastTime) < 3000) {
+                    // Duplicate within 3 seconds, skip
+                    return;
+                }
+                
+                if (lastTime != null) {
+                    // Expired, update
+                    recentNotifications.put(notificationKey, now);
+                }
+                
+                // Schedule cleanup
+                cleanupScheduler.schedule(
+                    () -> recentNotifications.remove(notificationKey),
+                    5, java.util.concurrent.TimeUnit.SECONDS
+                );
+                
+                String systemMessage = leaverNickname + " left the group";
+                GroupMessage groupMsg = new GroupMessage(groupName, "__SYSTEM__", systemMessage);
+                onGroupMessage.accept(groupMsg);
+                System.out.println("[GROUP] " + leaverNickname + " left " + groupName);
+            }
+        }
+    }
     
     private void handleVideoCallRequest(String[] parts, InetAddress addr) {
         // VIDEO_CALL_REQUEST;fromNickname;fromPort
@@ -258,6 +376,49 @@ public class UdpMessageHandler {
         System.out.println("[VIDEO] Call rejected by: " + fromNickname);
         // Handle in VideoCallController
     }
+    
+    private void handleVideoFrame(String[] parts, InetAddress addr) {
+        // VIDEO_FRAME;fromNickname;toNickname;base64FrameData
+        if (parts.length < 4) {
+            System.err.println("[UDP-VIDEO-ERR] Invalid frame format, parts: " + parts.length);
+            return;
+        }
+        
+        String fromNickname = parts[1].trim();
+        String toNickname = parts[2].trim();
+        String base64Frame = parts[3];
+        
+        // Ignore own frames FIRST (most efficient check)
+        if (fromNickname.equals(nickname)) {
+            // System.out.println("[UDP-VIDEO-DEBUG] Own frame, ignoring");
+            return;
+        }
+
+        // Only process if this frame is for me
+        if (!toNickname.equals(nickname)) {
+            // System.out.println("[UDP-VIDEO-DEBUG] Frame not for me (to: " + toNickname + "), ignoring");
+            return;
+        }
+        
+        System.out.println("[UDP-VIDEO-DEBUG] Processing frame from " + fromNickname + " to " + toNickname);
+        
+        try {
+            byte[] frameData = java.util.Base64.getDecoder().decode(base64Frame);
+            
+            System.out.println("[UDP-VIDEO-DEBUG] Decoded frame: " + frameData.length + " bytes");
+            
+            if (onVideoFrameReceived != null) {
+                VideoFrameData videoFrame = new VideoFrameData(fromNickname, frameData);
+                onVideoFrameReceived.accept(videoFrame);
+                System.out.println("[UDP-VIDEO] Frame forwarded to callback");
+            } else {
+                System.err.println("[UDP-VIDEO-ERR] No callback registered!");
+            }
+        } catch (Exception e) {
+            System.err.println("[UDP-VIDEO-ERR] Failed to decode frame: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     // Inner class for file download request
     public static class FileDownloadRequest {
@@ -276,6 +437,17 @@ public class UdpMessageHandler {
             this.sender = sender;
             this.fileName = fileName;
             this.fileSize = fileSize;
+        }
+    }
+    
+    // Inner class for video frame data
+    public static class VideoFrameData {
+        public final String fromNickname;
+        public final byte[] frameData;
+        
+        public VideoFrameData(String fromNickname, byte[] frameData) {
+            this.fromNickname = fromNickname;
+            this.frameData = frameData;
         }
     }
 }

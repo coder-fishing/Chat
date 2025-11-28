@@ -12,6 +12,7 @@ import java.io.IOException;
 public class ChatApplication extends Application {
 
     private MainController mainController;
+    private volatile boolean isShuttingDown = false;
 
     @Override
     public void start(Stage primaryStage) {
@@ -28,11 +29,15 @@ public class ChatApplication extends Application {
             primaryStage.setMinWidth(800);
             primaryStage.setMinHeight(600);
 
+            // Store ChatApplication instance in stage userData for shutdown handling
+            primaryStage.setUserData(this);
+
             // Handle window close
             primaryStage.setOnCloseRequest(e -> {
-                if (mainController != null) {
-                    mainController.shutdown();
-                }
+                System.out.println("========================================");
+                System.out.println("WINDOW CLOSE REQUESTED");
+                System.out.println("========================================");
+                performShutdown();
             });
 
             primaryStage.show();
@@ -45,6 +50,34 @@ public class ChatApplication extends Application {
 
     public void setMainController(MainController controller) {
         this.mainController = controller;
+        System.out.println("[APP] ✅ MainController registered: " + (controller != null ? "SUCCESS" : "NULL"));
+    }
+    
+    private void performShutdown() {
+        if (isShuttingDown) {
+            System.out.println("Shutdown already in progress, skipping...");
+            return;
+        }
+        
+        isShuttingDown = true;
+        
+        if (mainController != null) {
+            System.out.println("Broadcasting offline and shutting down...");
+            mainController.shutdown();
+            System.out.println("Shutdown complete");
+        } else {
+            System.out.println("WARNING: MainController is NULL");
+        }
+        
+        System.out.println("Exiting application");
+        javafx.application.Platform.exit();
+        System.exit(0);
+    }
+
+    @Override
+    public void stop() throws Exception {
+        performShutdown();
+        super.stop();
     }
 
     public static void main(String[] args) {

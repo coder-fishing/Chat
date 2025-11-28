@@ -8,7 +8,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.example.chatft.service.IdentityService;
 import org.example.chatft.service.NetworkService;
+import org.example.chatft.view.ChatApplication;
 
 import java.io.IOException;
 
@@ -32,16 +34,28 @@ public class LoginController {
         }
 
         try {
+            IdentityService identity = new IdentityService();
+            String fullNickName = identity.getFullNickname(nickname);
             // Load main view
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/example/chatft/ui/view/main.fxml"));
             Parent root = loader.load();
 
             // Get main controller and initialize network
             MainController mainController = loader.getController();
-            mainController.initializeNetwork(nickname);
+            mainController.initializeNetwork(fullNickName);
 
             // Switch to main scene
             Stage stage = (Stage) joinButton.getScene().getWindow();
+            
+            // Register MainController with ChatApplication for shutdown handling
+            if (stage.getUserData() instanceof ChatApplication) {
+                ChatApplication app = (ChatApplication) stage.getUserData();
+                app.setMainController(mainController);
+                System.out.println("[LOGIN] MainController registered with ChatApplication");
+            } else {
+                System.err.println("[LOGIN] WARNING: Could not register MainController - stage.getUserData() is not ChatApplication");
+            }
+            
             Scene scene = new Scene(root, 800, 600);
             stage.setScene(scene);
             stage.setTitle("P2P Chat - " + nickname);

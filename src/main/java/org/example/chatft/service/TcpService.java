@@ -86,6 +86,26 @@ public class TcpService {
     }
 
     /**
+     * Send TCP offline notification to a user
+     */
+    public void notifyOffline(User user) {
+        executor.submit(() -> {
+            try (Socket socket = new Socket(user.getIp(), user.getTcpPort());
+                 DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+
+                String msg = "TCP_OFFLINE:" + nickname;
+                out.writeUTF(msg);
+                out.flush();
+
+                System.out.println("[TCP-OFFLINE] Notified " + user.getNickname() + " that " + nickname + " is offline");
+
+            } catch (IOException e) {
+                System.out.println("[TCP-OFFLINE] Could not notify " + user.getNickname() + ": " + e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Get TCP port
      */
     public int getTcpPort() {

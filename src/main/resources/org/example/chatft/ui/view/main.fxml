@@ -16,12 +16,13 @@
             <HBox alignment="CENTER_LEFT" spacing="10" styleClass="sidebar-header">
                 <Label styleClass="sidebar-title" text="Chats" />
                 <Region HBox.hgrow="ALWAYS" />
+<!--                <Button fx:id="addIpButton" styleClass="settings-btn" text="+" onAction="#handleAddDirectIp" />-->
                 <Button styleClass="settings-btn" text="⚙" />
             </HBox>
 
             <!-- Search Box -->
             <HBox style="-fx-padding: 0 15 10 15;">
-                <TextField prefHeight="36" promptText="🔍 Search Messenger" styleClass="search-field" HBox.hgrow="ALWAYS" />
+                <TextField fx:id="searchField" prefHeight="36" promptText="🔍 Search Messenger" styleClass="search-field" HBox.hgrow="ALWAYS" />
             </HBox>
 
             <!-- Tabs for Users/Groups -->
@@ -38,11 +39,7 @@
                 <Tab styleClass="tab" text="Groups">
                     <VBox spacing="8" style="-fx-background-color: #ffffff; -fx-padding: 15;">
 
-                        <Button fx:id="createPublicGroupBtn"
-                                onAction="#handleCreatePublicGroup"
-                                prefHeight="36"
-                                prefWidth="240"
-                                styleClass="btn-secondary">
+                        <Button fx:id="createPublicGroupBtn" onAction="#handleCreatePublicGroup" prefHeight="36" prefWidth="240" styleClass="btn-secondary">
                             <graphic>
                                 <HBox alignment="CENTER" spacing="6">
                                     <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
@@ -55,28 +52,35 @@
                             </graphic>
                         </Button>
 
-                        <Button fx:id="createPrivateGroupBtn"
-                                onAction="#handleCreatePrivateGroup"
-                                prefHeight="36"
-                                prefWidth="240"
-                                styleClass="btn-secondary">
-
+                        <Button fx:id="createPrivateGroupBtn" onAction="#handleCreatePrivateGroup" prefHeight="36" prefWidth="240" styleClass="btn-secondary">
                             <graphic>
-                                <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
-                                    <image>
-                                        <Image url="@icons/lock.png" />
-                                    </image>
-                                </ImageView>
+                                <HBox alignment="CENTER" spacing="6">
+                                    <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
+                                        <image>
+                                            <Image url="@icons/lock.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label text="Create Private Group" />
+                                </HBox>
                             </graphic>
-
-                            <text>
-                                Create Private Group
-                            </text>
                         </Button>
 
                         <Separator styleClass="separator" />
 
-                        <ListView fx:id="groupListView" styleClass="list-view" VBox.vgrow="ALWAYS" />
+                        <!-- Sub-tabs for Public and Private Groups -->
+                        <TabPane fx:id="groupTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                            
+                            <!-- Public Groups Tab -->
+                            <Tab text="Public Groups">
+                                <ListView fx:id="publicGroupListView" styleClass="list-view" VBox.vgrow="ALWAYS" />
+                            </Tab>
+
+                            <!-- Private Groups Tab -->
+                            <Tab text="Private Groups">
+                                <ListView fx:id="privateGroupListView" styleClass="list-view" VBox.vgrow="ALWAYS" />
+                            </Tab>
+
+                        </TabPane>
                     </VBox>
                 </Tab>
 
@@ -102,7 +106,7 @@
                     <Region HBox.hgrow="ALWAYS" />
 
                     <Button styleClass="btn-icon" text="📞" />
-                    <Button fx:id="videoCallButton" styleClass="btn-icon" text="📹"  />
+                    <Button fx:id="videoCallButton" onAction="#handleVideoCall" styleClass="btn-icon" text="📹" />
                     <Button styleClass="btn-icon" text="ℹ" />
                 </HBox>
             </top>

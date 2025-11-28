@@ -15,6 +15,11 @@ public class TcpConnectionHandler {
     private final Consumer<String> onMessage;
     private final Consumer<FileMessage> onFileReceived;
     private Consumer<String[]> onVideoCallRequest;
+    private Consumer<String[]> onSdpOffer;
+    private Consumer<String[]> onSdpAnswer;
+    private Consumer<String[]> onIceCandidate;
+    private Consumer<String> onCallEnd;
+    private Consumer<String> onUserOfflineTcp;
 
     public TcpConnectionHandler(String nickname,
                                 GroupRepository groupRepository,
@@ -30,6 +35,26 @@ public class TcpConnectionHandler {
     
     public void setOnVideoCallRequest(Consumer<String[]> callback) {
         this.onVideoCallRequest = callback;
+    }
+    
+    public void setOnSdpOffer(Consumer<String[]> callback) {
+        this.onSdpOffer = callback;
+    }
+    
+    public void setOnSdpAnswer(Consumer<String[]> callback) {
+        this.onSdpAnswer = callback;
+    }
+    
+    public void setOnIceCandidate(Consumer<String[]> callback) {
+        this.onIceCandidate = callback;
+    }
+    
+    public void setOnCallEnd(Consumer<String> callback) {
+        this.onCallEnd = callback;
+    }
+    
+    public void setOnUserOfflineTcp(Consumer<String> callback) {
+        this.onUserOfflineTcp = callback;
     }
 
     public void handleConnection(Socket socket) {
@@ -48,8 +73,23 @@ public class TcpConnectionHandler {
             } else if (header.startsWith("REQUEST_GROUP_FILE:")) {
                 handleGroupFileRequest(header, out);
                 
+            } else if (header.startsWith("TCP_OFFLINE:")) {
+                handleTcpOffline(header);
+                
             } else if (header.startsWith("VIDEO_CALL_REQUEST")) {
                 handleVideoCallRequest(header);
+                
+            } else if (header.startsWith("VIDEO_SDP_OFFER:")) {
+                handleSdpOffer(header);
+                
+            } else if (header.startsWith("VIDEO_SDP_ANSWER:")) {
+                handleSdpAnswer(header);
+                
+            } else if (header.startsWith("VIDEO_ICE_CANDIDATE:")) {
+                handleIceCandidate(header);
+                
+            } else if (header.startsWith("VIDEO_CALL_END:")) {
+                handleCallEnd(header);
             }
 
         } catch (IOException e) {
@@ -63,6 +103,19 @@ public class TcpConnectionHandler {
         System.out.println("[TCP] Message received: " + msg);
     }
     
+    private void handleTcpOffline(String header) {
+        // TCP_OFFLINE:nicknameOfUserWhoLeft
+        String[] parts = header.split(":");
+        if (parts.length >= 2) {
+            String offlineNick = parts[1].trim();
+            System.out.println("[TCP-OFFLINE] User offline: " + offlineNick);
+            
+            if (onUserOfflineTcp != null) {
+                onUserOfflineTcp.accept(offlineNick);
+            }
+        }
+    }
+    
     private void handleVideoCallRequest(String header) {
         // VIDEO_CALL_REQUEST;fromNickname;fromPort
         System.out.println("[TCP-VIDEO] Received VIDEO_CALL_REQUEST: " + header);
@@ -73,6 +126,58 @@ public class TcpConnectionHandler {
             System.out.println("[TCP-VIDEO] Video call request forwarded to handler");
         } else {
             System.err.println("[TCP-VIDEO-ERR] Invalid format or no callback: " + header);
+        }
+    }
+    
+    private void handleSdpOffer(String header) {
+        // VIDEO_SDP_OFFER:fromNickname:sdp_content
+        System.out.println("[TCP-VIDEO] Received SDP Offer");
+        
+        String[] parts = header.split(":", 3);
+        if (parts.length >= 3 && onSdpOffer != null) {
+            onSdpOffer.accept(parts);
+            System.out.println("[TCP-VIDEO] SDP Offer forwarded");
+        } else {
+            System.err.println("[TCP-VIDEO-ERR] Invalid SDP Offer format");
+        }
+    }
+    
+    private void handleSdpAnswer(String header) {
+        // VIDEO_SDP_ANSWER:fromNickname:sdp_content
+        System.out.println("[TCP-VIDEO] Received SDP Answer");
+        
+        String[] parts = header.split(":", 3);
+        if (parts.length >= 3 && onSdpAnswer != null) {
+            onSdpAnswer.accept(parts);
+            System.out.println("[TCP-VIDEO] SDP Answer forwarded");
+        } else {
+            System.err.println("[TCP-VIDEO-ERR] Invalid SDP Answer format");
+        }
+    }
+    
+    private void handleIceCandidate(String header) {
+        // VIDEO_ICE_CANDIDATE:fromNickname:candidate_json
+        System.out.println("[TCP-VIDEO] Received ICE Candidate");
+        
+        String[] parts = header.split(":", 3);
+        if (parts.length >= 3 && onIceCandidate != null) {
+            onIceCandidate.accept(parts);
+            System.out.println("[TCP-VIDEO] ICE Candidate forwarded");
+        } else {
+            System.err.println("[TCP-VIDEO-ERR] Invalid ICE Candidate format");
+        }
+    }
+    
+    private void handleCallEnd(String header) {
+        // VIDEO_CALL_END:fromNickname
+        System.out.println("[TCP-VIDEO] Received Call End");
+        
+        String[] parts = header.split(":");
+        if (parts.length >= 2 && onCallEnd != null) {
+            onCallEnd.accept(parts[1]);
+            System.out.println("[TCP-VIDEO] Call End forwarded");
+        } else {
+            System.err.println("[TCP-VIDEO-ERR] Invalid Call End format");
         }
     }
 
