@@ -6,8 +6,11 @@ import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import org.example.chatft.model.User;
 
 public class UserCell extends ListCell<User> {
@@ -16,7 +19,7 @@ public class UserCell extends ListCell<User> {
     private StackPane avatarContainer;
     private Circle avatar;
     private Label initials;
-    private Label nameLabel;
+    private TextFlow nameTextFlow;
     private Label badge;
 
     public UserCell() {
@@ -29,10 +32,9 @@ public class UserCell extends ListCell<User> {
         avatarContainer.setAlignment(Pos.CENTER);
         avatarContainer.setPrefSize(40, 40);
 
-        nameLabel = new Label();
-        nameLabel.setStyle("-fx-font-size: 14px;");
-        nameLabel.setMaxWidth(140);
-        HBox.setHgrow(nameLabel, Priority.ALWAYS);
+        nameTextFlow = new TextFlow();
+        nameTextFlow.setMaxWidth(140);
+        HBox.setHgrow(nameTextFlow, Priority.ALWAYS);
 
         badge = new Label();
         badge.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white; " +
@@ -41,7 +43,7 @@ public class UserCell extends ListCell<User> {
         badge.setManaged(false);
         badge.setVisible(false);
 
-        content = new HBox(12, avatarContainer, nameLabel, badge);
+        content = new HBox(12, avatarContainer, nameTextFlow, badge);
         content.setAlignment(Pos.CENTER_LEFT);
         content.setStyle("-fx-padding: 8 12;");
     }
@@ -54,14 +56,42 @@ public class UserCell extends ListCell<User> {
             setGraphic(null);
             setStyle("");
         } else {
-            String initial = user.getNickname().substring(0, 1).toUpperCase();
+            String fullNickname = user.getNickname();
+            
+            // Parse ID#Name format
+            String[] parts = fullNickname.split("#", 2);
+            String displayName;
+            String idPart = null;
+            
+            if (parts.length == 2) {
+                idPart = parts[0];
+                displayName = parts[1];
+            } else {
+                displayName = fullNickname;
+            }
+            
+            // Set initial from display name
+            String initial = displayName.substring(0, 1).toUpperCase();
             initials.setText(initial);
 
-            // ✅ Set màu đơn sắc
-            Color color = getColorForUser(user.getNickname());
+            // Set avatar color
+            Color color = getColorForUser(fullNickname);
             avatar.setFill(color);
 
-            nameLabel.setText(user.getNickname());
+            // Build styled name with ID
+            nameTextFlow.getChildren().clear();
+            
+            if (idPart != null) {
+                // ID part - small and gray
+                Text idText = new Text("#"+ idPart + " ");
+                idText.setStyle("-fx-font-size: 10px; -fx-fill: #888888;");
+                nameTextFlow.getChildren().add(idText);
+            }
+            
+            // Name part - normal size
+            Text nameText = new Text(displayName);
+            nameText.setStyle("-fx-font-size: 14px; -fx-fill: #333333;");
+            nameTextFlow.getChildren().add(nameText);
 
             if (user.getUnreadCount() > 0) {
                 String badgeText = user.getUnreadCount() > 9 ? "9+" : String.valueOf(user.getUnreadCount());

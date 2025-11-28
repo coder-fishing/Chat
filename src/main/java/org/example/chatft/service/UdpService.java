@@ -139,7 +139,12 @@ public class UdpService {
                     String msg = new String(packet.getData(), 0, packet.getLength());
                     String fromIP = packet.getAddress().getHostAddress();
                     
-                    System.out.println("[UDP-RECV][" + iface.getDisplayName() + "] from " + fromIP + ": " + msg);
+                    // Log all messages, highlight OFFLINE
+                    if (msg.startsWith("OFFLINE")) {
+                        System.out.println("[UDP-RECV-OFFLINE][" + iface.getDisplayName() + "] from " + fromIP + ": " + msg);
+                    } else {
+                        System.out.println("[UDP-RECV][" + iface.getDisplayName() + "] from " + fromIP + ": " + msg);
+                    }
 
                     messageHandler.handleMessage(msg, packet.getAddress());
 
@@ -261,7 +266,12 @@ public class UdpService {
      * Broadcast OFFLINE status
      */
     public void broadcastOffline() {
-        sendMessage("OFFLINE;" + nickname + ";" + tcpPort);
+        String message = "OFFLINE;" + nickname;
+        System.out.println("[UDP] ========================================");
+        System.out.println("[UDP] Broadcasting OFFLINE: " + message);
+        System.out.println("[UDP] ========================================");
+        sendMessage(message);
+        System.out.println("[UDP] OFFLINE broadcast completed");
     }
 
     /**
@@ -292,6 +302,51 @@ public class UdpService {
     public void announceGroupFile(String groupName, String senderNick, String fileName, long fileSize, int tcpPort) {
         String payload = "GFILE;" + groupName + ";" + senderNick + ";" + fileName + ";" + fileSize + ";" + tcpPort;
         sendMessage(payload);
+    }
+
+    /**
+     * Broadcast join group notification
+     */
+    public void broadcastJoinGroup(String groupName, String nickname) {
+        String msg = "JOIN_GROUP;" + groupName + ";" + nickname;
+        sendMessage(msg);
+    }
+
+    /**
+     * Broadcast leave group notification
+     */
+    public void broadcastLeaveGroup(String groupName, String nickname) {
+        String msg = "LEAVE_GROUP;" + groupName + ";" + nickname;
+        sendMessage(msg);
+    }
+    
+    /**
+     * Send video frame via UDP unicast directly to recipient
+     */
+    public void sendVideoFrame(String toNickname, String toIp, byte[] frameData) {
+        try {
+            // Encode to base64 to safely send over UDP
+            String base64Frame = java.util.Base64.getEncoder().encodeToString(frameData);
+            String payload = "VIDEO_FRAME;" + nickname + ";" + toNickname + ";" + base64Frame;
+            
+            byte[] buf = payload.getBytes();
+            
+            // Check size
+            if (buf.length >= 65000) {
+                System.err.println("[UDP-VIDEO] Frame too large: " + buf.length + " bytes, skipping");
+                return;
+            }
+            
+            // Send via UNICAST directly to recipient IP (not multicast)
+            InetAddress recipientAddr = InetAddress.getByName(toIp);
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, recipientAddr, NetworkConfig.UDP_PORT);
+            broadcastSocket.send(packet);
+            
+            System.out.println("[UDP-VIDEO-SEND] Sent frame to " + toNickname + " @ " + toIp + " - " + buf.length + " bytes");
+            
+        } catch (IOException e) {
+            System.err.println("[UDP-VIDEO-ERR] Failed to send frame: " + e.getMessage());
+        }
     }
 
     /**

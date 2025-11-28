@@ -1,0 +1,42 @@
+/* ========== Toast Notification Styles ========== */
+
+.toast {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 8;
+    -fx-padding: 16 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 3);
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+/* Success Toast - Green */
+.toast-success {
+    -fx-background-color: #d4edda;
+    -fx-text-fill: #155724;
+    -fx-border-color: #c3e6cb;
+}
+
+/* Warning Toast - Yellow/Orange */
+.toast-warning {
+    -fx-background-color: #fff3cd;
+    -fx-text-fill: #856404;
+    -fx-border-color: #ffeaa7;
+}
+
+/* Error Toast - Red */
+.toast-error {
+    -fx-background-color: #f8d7da;
+    -fx-text-fill: #721c24;
+    -fx-border-color: #f5c6cb;
+}
+
+/* Info Toast - Blue */
+.toast-info {
+    -fx-background-color: #d1ecf1;
+    -fx-text-fill: #0c5460;
+    -fx-border-color: #bee5eb;
+}
